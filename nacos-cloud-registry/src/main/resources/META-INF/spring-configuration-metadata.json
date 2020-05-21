@@ -1,0 +1,191 @@
+{
+  "hints": [],
+  "groups": [
+    {
+      "sourceType": "com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpoint",
+      "name": "management.endpoint.nacos-discovery",
+      "type": "com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpoint"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery",
+      "type": "com.alibaba.cloud.nacos.NacosDiscoveryProperties"
+    }
+  ],
+  "properties": [
+    {
+      "sourceType": "com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpoint",
+      "defaultValue": "0ms",
+      "name": "management.endpoint.nacos-discovery.cache.time-to-live",
+      "description": "Maximum time that a response can be cached.",
+      "type": "java.time.Duration"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpoint",
+      "defaultValue": true,
+      "name": "management.endpoint.nacos-discovery.enabled",
+      "description": "Whether to enable the nacos-discovery endpoint.",
+      "type": "java.lang.Boolean"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.access-key",
+      "description": "access key for namespace.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": "DEFAULT",
+      "name": "spring.cloud.nacos.discovery.cluster-name",
+      "description": "cluster name for nacos .",
+      "type": "java.lang.String"
+    },
+    {
+      "defaultValue": true,
+      "name": "spring.cloud.nacos.discovery.enabled",
+      "description": "enable nacos discovery or not.",
+      "type": "java.lang.Boolean"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.endpoint",
+      "description": "the domain name of a service, through which the server address can be dynamically obtained.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": "DEFAULT_GROUP",
+      "name": "spring.cloud.nacos.discovery.group",
+      "description": "group name for nacos.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.heart-beat-interval",
+      "description": "Heart beat interval. Time unit: second.",
+      "type": "java.lang.Integer"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.heart-beat-timeout",
+      "description": "Heart beat timeout. Time unit: second.",
+      "type": "java.lang.Integer"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.ip",
+      "description": "The ip address your want to register for your service instance, needn't to set it if the auto detect ip works well.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.ip-delete-timeout",
+      "description": "Ip delete timeout. Time unit: second.",
+      "type": "java.lang.Integer"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.log-name",
+      "description": "nacos naming log file name.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.metadata",
+      "description": "extra metadata to register.",
+      "type": "java.util.Map<java.lang.String,java.lang.String>"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.namespace",
+      "description": "namespace, separation registry of different environments.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": "false",
+      "name": "spring.cloud.nacos.discovery.naming-load-cache-at-start",
+      "description": "naming load from local cache at application start. true is load.",
+      "type": "java.lang.String"
+    },
+    {
+      "defaultValue": "false",
+      "name": "spring.cloud.nacos.discovery.namingLoadCacheAtStart",
+      "description": "naming load from local cache at application start .",
+      "type": "java.lang.Boolean"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": "",
+      "name": "spring.cloud.nacos.discovery.network-interface",
+      "description": "which network interface's ip you want to register.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": -1,
+      "name": "spring.cloud.nacos.discovery.port",
+      "description": "The port your want to register for your service instance, needn't to set it if the auto detect port works well.",
+      "type": "java.lang.Integer"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": true,
+      "name": "spring.cloud.nacos.discovery.register-enabled",
+      "description": "if you just want to subscribe, but don't want to register your service, set it to false.",
+      "type": "java.lang.Boolean"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "name": "spring.cloud.nacos.discovery.secret-key",
+      "description": "secret key for namespace.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": false,
+      "name": "spring.cloud.nacos.discovery.secure",
+      "description": "whether your service is a https service.",
+      "type": "java.lang.Boolean"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": "${spring.cloud.nacos.server-addr}",
+      "name": "spring.cloud.nacos.discovery.server-addr",
+      "description": "nacos discovery server address.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": "${spring.application.name}",
+      "name": "spring.cloud.nacos.discovery.service",
+      "description": "the service name to register, default value is ${spring.application.name}.",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": 30000,
+      "name": "spring.cloud.nacos.discovery.watch-delay",
+      "description": "watch delay,duration to pull new service from nacos server.",
+      "type": "java.lang.Long"
+    },
+    {
+      "defaultValue": "true",
+      "name": "spring.cloud.nacos.discovery.watch.enabled",
+      "description": "enable nacos discovery watch or not .",
+      "type": "java.lang.Boolean"
+    },
+    {
+      "sourceType": "com.alibaba.cloud.nacos.NacosDiscoveryProperties",
+      "defaultValue": 1,
+      "name": "spring.cloud.nacos.discovery.weight",
+      "description": "weight for service instance, the larger the value, the larger the weight.",
+      "type": "java.lang.Float"
+    },
+    {
+      "name": "spring.cloud.nacos.server-addr",
+      "description": "nacos server address.",
+      "type": "java.lang.String"
+    }
+  ]
+}

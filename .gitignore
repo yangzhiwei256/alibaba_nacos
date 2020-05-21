@@ -1,0 +1,22 @@
+# Except this file !.gitignore
+.classpath
+.project
+.settings
+target
+.idea
+.vscode
+.DS_Store
+.factorypath
+/logs
+*.iml
+node_modules
+test/derby.log
+derby.log
+*.log
+nacos/data
+nacos/logs
+nacos/status
+nacos/work
+nacos/config
+nacos/naming
+dist/

@@ -1,0 +1,15 @@
+server:
+  port: 8082
+spring:
+  profiles:
+    active: dev
+  application:
+    name: nacos-service-consume
+  cloud:
+    nacos:
+      discovery:
+        username: nacos
+        password: nacos
+        server-addr: localhost:8848
+        namespace: ${spring.profiles.active}
+        group: nacos-service-registry ## 服务订阅组

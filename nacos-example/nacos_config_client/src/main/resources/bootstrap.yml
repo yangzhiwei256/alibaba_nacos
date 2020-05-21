@@ -1,0 +1,20 @@
+#server:
+#  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: nacos_config_client
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848
+        namespace: dev # 命名空间，默认public,注意必须是命名空间ID
+        group: ${spring.application.name}
+        prefix: ${spring.application.name} # 文件前缀
+        file-extension: properties # 文件后缀
+        username: nacos
+        password: nacos
+        extConfig:
+          - { dataId: common.properties, group: common, refresh: true }
