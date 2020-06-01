@@ -1077,6 +1077,9 @@ class ConfigurationManagement extends React.Component {
     self.field.setValue('sameConfigPolicy', 'ABORT');
     const uploadProps = {
       accept: 'application/zip',
+      headers:{
+        Authorization: sessionStorage.getItem('token'),
+      },
       action: `v1/cs/configs?import=true&namespace=${getParams('namespace')}`,
       data: {
         policy: self.field.getValue('sameConfigPolicy'),
