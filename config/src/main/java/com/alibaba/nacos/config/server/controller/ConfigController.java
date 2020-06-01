@@ -161,8 +161,7 @@ public class ConfigController {
     }
 
     /**
-     * 取数据
-     *
+     * 获取配置中心数据
      * @throws ServletException
      * @throws IOException
      * @throws NacosException
@@ -170,15 +169,14 @@ public class ConfigController {
     @GetMapping
     @Secured(action = ActionTypes.READ, parser = ConfigResourceParser.class)
     public void getConfig(HttpServletRequest request, HttpServletResponse response,
-                          @RequestParam("dataId") String dataId, @RequestParam("group") String group,
-                          @RequestParam(value = "tenant", required = false, defaultValue = StringUtils.EMPTY)
-                              String tenant,
+                          @RequestParam("dataId") String dataId,
+                          @RequestParam("group") String group,
+                          @RequestParam(value = "tenant", required = false, defaultValue = StringUtils.EMPTY) String tenant,
                           @RequestParam(value = "tag", required = false) String tag)
         throws IOException, ServletException, NacosException {
         // check params
         ParamUtils.checkParam(dataId, group, "datumId", "content");
         ParamUtils.checkParam(tag);
-
         final String clientIp = RequestUtil.getRemoteIp(request);
         inner.doGetConfig(request, response, dataId, group, tenant, tag, clientIp);
     }
@@ -325,12 +323,11 @@ public class ConfigController {
     public Page<ConfigInfo> searchConfig(@RequestParam("dataId") String dataId,
                                          @RequestParam("group") String group,
                                          @RequestParam(value = "appName", required = false) String appName,
-                                         @RequestParam(value = "tenant", required = false,
-                                             defaultValue = StringUtils.EMPTY) String tenant,
+                                         @RequestParam(value = "tenant", required = false, defaultValue = StringUtils.EMPTY) String tenant,
                                          @RequestParam(value = "config_tags", required = false) String configTags,
                                          @RequestParam("pageNo") int pageNo,
                                          @RequestParam("pageSize") int pageSize) {
-        Map<String, Object> configAdvanceInfo = new HashMap<String, Object>(100);
+        Map<String, Object> configAdvanceInfo = new HashMap<>(100);
         if (StringUtils.isNotBlank(appName)) {
             configAdvanceInfo.put("appName", appName);
         }
@@ -338,8 +335,7 @@ public class ConfigController {
             configAdvanceInfo.put("config_tags", configTags);
         }
         try {
-            return persistService.findConfigInfo4Page(pageNo, pageSize, dataId, group, tenant,
-                configAdvanceInfo);
+            return persistService.findConfigInfo4Page(pageNo, pageSize, dataId, group, tenant, configAdvanceInfo);
         } catch (Exception e) {
             String errorMsg = "serialize page error, dataId=" + dataId + ", group=" + group;
             log.error(errorMsg, e);

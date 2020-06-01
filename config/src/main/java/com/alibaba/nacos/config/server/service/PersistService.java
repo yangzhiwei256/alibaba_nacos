@@ -1340,16 +1340,16 @@ public class PersistService {
             where.append(" a.tenant_id=? ");
 
             if (StringUtils.isNotBlank(dataId)) {
-                where.append(" and a.data_id=? ");
-                paramList.add(dataId);
+                where.append(" and a.data_id like ? ");
+                paramList.add("%".concat(dataId).concat("%"));
             }
             if (StringUtils.isNotBlank(group)) {
-                where.append(" and a.group_id=? ");
-                paramList.add(group);
+                where.append(" and a.group_id like ? ");
+                paramList.add("%".concat(group).concat("%"));
             }
             if (StringUtils.isNotBlank(appName)) {
-                where.append(" and a.app_name=? ");
-                paramList.add(appName);
+                where.append(" and a.app_name like ? ");
+                paramList.add("%".concat(appName).concat("%"));
             }
 
             where.append(" and b.tag_name in (");
@@ -1365,16 +1365,16 @@ public class PersistService {
         } else {
             where.append(" tenant_id=? ");
             if (StringUtils.isNotBlank(dataId)) {
-                where.append(" and data_id=? ");
-                paramList.add(dataId);
+                where.append(" and data_id like ? ");
+                paramList.add("%".concat(dataId).concat("%"));
             }
             if (StringUtils.isNotBlank(group)) {
-                where.append(" and group_id=? ");
-                paramList.add(group);
+                where.append(" and group_id like ? ");
+                paramList.add("%".concat(group).concat("%"));
             }
             if (StringUtils.isNotBlank(appName)) {
-                where.append(" and app_name=? ");
-                paramList.add(appName);
+                where.append(" and app_name like ? ");
+                paramList.add("%".concat(appName).concat("%"));
             }
         }
         try {
