@@ -17,7 +17,7 @@ package com.alibaba.nacos.console.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.common.Constants;
-import com.alibaba.nacos.config.server.auth.RoleInfo;
+import com.alibaba.nacos.config.server.auth.UserRoleInfo;
 import com.alibaba.nacos.config.server.model.RestResult;
 import com.alibaba.nacos.config.server.model.User;
 import com.alibaba.nacos.console.security.nacos.NacosAuthConfig;
@@ -100,10 +100,10 @@ public class UserController {
     @DeleteMapping
     @Secured(resource = NacosAuthConfig.CONSOLE_RESOURCE_NAME_PREFIX + "nacos.users", action = ActionTypes.WRITE)
     public Object deleteUser(@RequestParam String username) {
-        List<RoleInfo> roleInfoList = roleService.getRoles(username);
-        if (roleInfoList != null) {
-            for (RoleInfo roleInfo : roleInfoList) {
-                if (roleInfo.getRole().equals(NacosRoleServiceImpl.GLOBAL_ADMIN_ROLE)) {
+        List<UserRoleInfo> userRoleInfoList = roleService.getRoles(username);
+        if (userRoleInfoList != null) {
+            for (UserRoleInfo userRoleInfo : userRoleInfoList) {
+                if (userRoleInfo.getRole().equals(NacosRoleServiceImpl.GLOBAL_ADMIN_ROLE)) {
                     throw new IllegalArgumentException("cannot delete admin: " + username);
                 }
             }

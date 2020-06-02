@@ -19,7 +19,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
 import com.alibaba.nacos.common.constant.CommonConstants;
-import com.alibaba.nacos.config.server.auth.RoleInfo;
+import com.alibaba.nacos.config.server.auth.UserRoleInfo;
 import com.alibaba.nacos.console.security.nacos.roles.NacosRoleServiceImpl;
 import com.alibaba.nacos.console.security.nacos.users.NacosUser;
 import com.alibaba.nacos.core.auth.AccessException;
@@ -85,21 +85,21 @@ public class NacosAuthManager implements AuthManager {
         NacosUser user = new NacosUser();
         user.setUserName(username);
         user.setToken(token);
-        List<RoleInfo> roleInfoList = roleService.getRoles(username);
-        if(CollectionUtils.isEmpty(roleInfoList)){
+        List<UserRoleInfo> userRoleInfoList = roleService.getRoles(username);
+        if(CollectionUtils.isEmpty(userRoleInfoList)){
             throw new AccessException("user role invalid!");
         }
 
         String channel = req.getHeader(CommonConstants.LOGIN_CHANNEL);
-        boolean isAppChannel = roleInfoList.stream().map(RoleInfo::getRole).collect(Collectors.toList()).contains(CommonConstants.APP_LOGIN_ROLE);
+        boolean isAppChannel = userRoleInfoList.stream().map(UserRoleInfo::getRole).collect(Collectors.toList()).contains(CommonConstants.APP_LOGIN_ROLE);
 
         //APP渠道不能登陆nacos管理后台
         if(isAppChannel && StringUtils.isEmpty(channel)){
             throw new AccessException("user login channel invalid!");
         }
 
-        for (RoleInfo roleInfo : roleInfoList) {
-            if (roleInfo.getRole().equals(NacosRoleServiceImpl.GLOBAL_ADMIN_ROLE)) {
+        for (UserRoleInfo userRoleInfo : userRoleInfoList) {
+            if (userRoleInfo.getRole().equals(NacosRoleServiceImpl.GLOBAL_ADMIN_ROLE)) {
                 user.setGlobalAdmin(true);
                 break;
             }

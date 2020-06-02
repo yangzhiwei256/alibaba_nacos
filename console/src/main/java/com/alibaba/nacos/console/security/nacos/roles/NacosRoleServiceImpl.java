@@ -18,8 +18,8 @@ package com.alibaba.nacos.console.security.nacos.roles;
 
 import com.alibaba.nacos.config.server.auth.PermissionInfo;
 import com.alibaba.nacos.config.server.auth.PermissionPersistService;
-import com.alibaba.nacos.config.server.auth.RoleInfo;
 import com.alibaba.nacos.config.server.auth.RolePersistService;
+import com.alibaba.nacos.config.server.auth.UserRoleInfo;
 import com.alibaba.nacos.config.server.model.Page;
 import com.alibaba.nacos.console.security.nacos.NacosAuthConfig;
 import com.alibaba.nacos.console.security.nacos.users.NacosUserDetailsServiceImpl;
@@ -63,25 +63,25 @@ public class NacosRoleServiceImpl {
 
     private Set<String> roleSet = new ConcurrentHashSet<>();
 
-    private Map<String, List<RoleInfo>> roleInfoMap = new ConcurrentHashMap<>();
+    private Map<String, List<UserRoleInfo>> roleInfoMap = new ConcurrentHashMap<>();
 
     private Map<String, List<PermissionInfo>> permissionInfoMap = new ConcurrentHashMap<>();
 
     @Scheduled(initialDelay = 5000, fixedDelay = 15000)
     private void reload() {
         try {
-            Page<RoleInfo> roleInfoPage = rolePersistService.getRolesByUserName(StringUtils.EMPTY, 1, Integer.MAX_VALUE);
+            Page<UserRoleInfo> roleInfoPage = rolePersistService.getRolesByUserName(StringUtils.EMPTY, 1, Integer.MAX_VALUE);
             if (roleInfoPage == null) {
                 return;
             }
             Set<String> tmpRoleSet = new HashSet<>(16);
-            Map<String, List<RoleInfo>> tmpRoleInfoMap = new ConcurrentHashMap<>(16);
-            for (RoleInfo roleInfo : roleInfoPage.getPageItems()) {
-                if (!tmpRoleInfoMap.containsKey(roleInfo.getUsername())) {
-                    tmpRoleInfoMap.put(roleInfo.getUsername(), new ArrayList<>());
+            Map<String, List<UserRoleInfo>> tmpRoleInfoMap = new ConcurrentHashMap<>(16);
+            for (UserRoleInfo userRoleInfo : roleInfoPage.getPageItems()) {
+                if (!tmpRoleInfoMap.containsKey(userRoleInfo.getUsername())) {
+                    tmpRoleInfoMap.put(userRoleInfo.getUsername(), new ArrayList<>());
                 }
-                tmpRoleInfoMap.get(roleInfo.getUsername()).add(roleInfo);
-                tmpRoleSet.add(roleInfo.getRole());
+                tmpRoleInfoMap.get(userRoleInfo.getUsername()).add(userRoleInfo);
+                tmpRoleSet.add(userRoleInfo.getRole());
             }
 
             Map<String, List<PermissionInfo>> tmpPermissionInfoMap = new ConcurrentHashMap<>(16);
@@ -110,14 +110,14 @@ public class NacosRoleServiceImpl {
      */
     public boolean hasPermission(String username, Permission permission) {
 
-        List<RoleInfo> roleInfoList = getRoles(username);
-        if (Collections.isEmpty(roleInfoList)) {
+        List<UserRoleInfo> userRoleInfoList = getRoles(username);
+        if (Collections.isEmpty(userRoleInfoList)) {
             return false;
         }
 
         // Global admin pass:
-        for (RoleInfo roleInfo : roleInfoList) {
-            if (GLOBAL_ADMIN_ROLE.equals(roleInfo.getRole())) {
+        for (UserRoleInfo userRoleInfo : userRoleInfoList) {
+            if (GLOBAL_ADMIN_ROLE.equals(userRoleInfo.getRole())) {
                 return true;
             }
         }
@@ -133,8 +133,8 @@ public class NacosRoleServiceImpl {
         }
 
         // For other roles, use a pattern match to decide if pass or not.
-        for (RoleInfo roleInfo : roleInfoList) {
-            List<PermissionInfo> permissionInfoList = getPermissions(roleInfo.getRole());
+        for (UserRoleInfo userRoleInfo : userRoleInfoList) {
+            List<PermissionInfo> permissionInfoList = getPermissions(userRoleInfo.getRole());
             if (Collections.isEmpty(permissionInfoList)) {
                 continue;
             }
@@ -150,19 +150,19 @@ public class NacosRoleServiceImpl {
         return false;
     }
 
-    public List<RoleInfo> getRoles(String username) {
-        List<RoleInfo> roleInfoList = roleInfoMap.get(username);
+    public List<UserRoleInfo> getRoles(String username) {
+        List<UserRoleInfo> userRoleInfoList = roleInfoMap.get(username);
         if (!authConfigs.isCachingEnabled()) {
-            Page<RoleInfo> roleInfoPage = getRolesFromDatabase(username, 1, Integer.MAX_VALUE);
+            Page<UserRoleInfo> roleInfoPage = getRolesFromDatabase(username, 1, Integer.MAX_VALUE);
             if (roleInfoPage != null) {
-                roleInfoList = roleInfoPage.getPageItems();
+                userRoleInfoList = roleInfoPage.getPageItems();
             }
         }
-        return roleInfoList;
+        return userRoleInfoList;
     }
 
-    public Page<RoleInfo> getRolesFromDatabase(String userName, int pageNo, int pageSize) {
-        Page<RoleInfo> roles = rolePersistService.getRolesByUserName(userName, pageNo, pageSize);
+    public Page<UserRoleInfo> getRolesFromDatabase(String userName, int pageNo, int pageSize) {
+        Page<UserRoleInfo> roles = rolePersistService.getRolesByUserName(userName, pageNo, pageSize);
         if (roles == null) {
             return new Page<>();
         }

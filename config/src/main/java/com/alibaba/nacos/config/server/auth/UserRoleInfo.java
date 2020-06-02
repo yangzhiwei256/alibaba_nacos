@@ -16,15 +16,16 @@
 package com.alibaba.nacos.config.server.auth;
 
 /**
- * Role Info
- *
+ * 用户角色关联信息
  * @author nkorange
  * @since 1.2.0
  */
-public class RoleInfo {
+public class UserRoleInfo {
 
+    /** 角色名 **/
     private String role;
 
+    /** 用户名 **/
     private String username;
 
     public String getRole() {

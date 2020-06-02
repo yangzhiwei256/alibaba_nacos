@@ -40,9 +40,9 @@ import java.util.ArrayList;
 public class RolePersistService extends PersistService {
 
 
-    public Page<RoleInfo> getRoles(int pageNo, int pageSize) {
+    public Page<UserRoleInfo> getRoles(int pageNo, int pageSize) {
 
-        PaginationHelper<RoleInfo> helper = new PaginationHelper<>();
+        PaginationHelper<UserRoleInfo> helper = new PaginationHelper<>();
 
         String sqlCountRows = "select count(*) from (select distinct role from roles) roles where ";
         String sqlFetchRows
@@ -51,7 +51,7 @@ public class RolePersistService extends PersistService {
         String where = " 1=1 ";
 
         try {
-            Page<RoleInfo> pageInfo = helper.fetchPage(jdbcTemplate, sqlCountRows
+            Page<UserRoleInfo> pageInfo = helper.fetchPage(jdbcTemplate, sqlCountRows
                     + where, sqlFetchRows + where, new ArrayList<String>().toArray(), pageNo,
                 pageSize, ROLE_INFO_ROW_MAPPER);
             if (pageInfo == null) {
@@ -66,9 +66,9 @@ public class RolePersistService extends PersistService {
         }
     }
 
-    public Page<RoleInfo> getRolesByUserName(String username, int pageNo, int pageSize) {
+    public Page<UserRoleInfo> getRolesByUserName(String username, int pageNo, int pageSize) {
 
-        PaginationHelper<RoleInfo> helper = new PaginationHelper<>();
+        PaginationHelper<UserRoleInfo> helper = new PaginationHelper<>();
 
         String sqlCountRows = "select count(*) from roles where ";
         String sqlFetchRows
@@ -123,14 +123,14 @@ public class RolePersistService extends PersistService {
     }
 
     private static final class RoleInfoRowMapper implements
-        RowMapper<RoleInfo> {
+        RowMapper<UserRoleInfo> {
         @Override
-        public RoleInfo mapRow(ResultSet rs, int rowNum)
+        public UserRoleInfo mapRow(ResultSet rs, int rowNum)
             throws SQLException {
-            RoleInfo roleInfo = new RoleInfo();
-            roleInfo.setRole(rs.getString("role"));
-            roleInfo.setUsername(rs.getString("username"));
-            return roleInfo;
+            UserRoleInfo userRoleInfo = new UserRoleInfo();
+            userRoleInfo.setRole(rs.getString("role"));
+            userRoleInfo.setUsername(rs.getString("username"));
+            return userRoleInfo;
         }
     }
 
