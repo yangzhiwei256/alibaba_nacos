@@ -40,7 +40,7 @@ public class PermissionController {
     private NacosRoleServiceImpl nacosRoleService;
 
     /**
-     * Query nacos.permissions of a role
+     * Query permissions of a role
      *
      * @param role     the role
      * @param pageNo   page index

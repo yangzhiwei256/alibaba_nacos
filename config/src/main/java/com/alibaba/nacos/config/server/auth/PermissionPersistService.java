@@ -43,9 +43,9 @@ public class PermissionPersistService extends PersistService {
     public Page<PermissionInfo> getPermissions(String role, int pageNo, int pageSize) {
         PaginationHelper<PermissionInfo> helper = new PaginationHelper<>();
 
-        String sqlCountRows = "select count(*) from nacos.permissions where ";
+        String sqlCountRows = "select count(*) from permissions where ";
         String sqlFetchRows
-            = "select role,resource,action from nacos.permissions where ";
+            = "select role,resource,action from permissions where ";
 
         String where = " role='" + role + "' ";
 
@@ -74,7 +74,7 @@ public class PermissionPersistService extends PersistService {
 
     public void addPermission(String role, String resource, String action) {
 
-        String sql = "INSERT into nacos.permissions (role, resource, action) VALUES (?, ?, ?)";
+        String sql = "INSERT into permissions (role, resource, action) VALUES (?, ?, ?)";
 
         try {
             jdbcTemplate.update(sql, role, resource, action);
@@ -86,7 +86,7 @@ public class PermissionPersistService extends PersistService {
 
     public void deletePermission(String role, String resource, String action) {
 
-        String sql = "DELETE from nacos.permissions WHERE role=? and resource=? and action=?";
+        String sql = "DELETE from permissions WHERE role=? and resource=? and action=?";
         try {
             jdbcTemplate.update(sql, role, resource, action);
         } catch (CannotGetJdbcConnectionException e) {

@@ -72,10 +72,8 @@ public class LocalDataSourceServiceImpl implements DataSourceService {
         ds.setMaxIdle(50);
         ds.setMaxWait(10000L);
         ds.setPoolPreparedStatements(true);
-        ds.setTimeBetweenEvictionRunsMillis(TimeUnit.MINUTES
-            .toMillis(10L));
+        ds.setTimeBetweenEvictionRunsMillis(TimeUnit.MINUTES.toMillis(10L));
         ds.setTestWhileIdle(true);
-
         jt = new JdbcTemplate();
         jt.setMaxRows(50000);
         jt.setQueryTimeout(5000);

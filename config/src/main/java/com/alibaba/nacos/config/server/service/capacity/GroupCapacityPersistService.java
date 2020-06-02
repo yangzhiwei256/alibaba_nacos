@@ -80,7 +80,7 @@ public class GroupCapacityPersistService {
 
     public GroupCapacity getGroupCapacity(String groupId) {
         String sql
-            = "SELECT id, quota, `usage`, `max_size`, max_aggr_count, max_aggr_size, group_id FROM nacos.group_capacity "
+            = "SELECT id, quota, `usage`, `max_size`, max_aggr_count, max_aggr_size, group_id FROM group_capacity "
             + "WHERE group_id=?";
         List<GroupCapacity> list = jdbcTemplate.query(sql, new Object[] {groupId},
             GROUP_CAPACITY_ROW_MAPPER);
@@ -98,13 +98,13 @@ public class GroupCapacityPersistService {
         String sql;
         if (CLUSTER.equals(capacity.getGroup())) {
             sql
-                = "insert into nacos.group_capacity (group_id, quota, `usage`, `max_size`, max_aggr_count, max_aggr_size, "
-                + "gmt_create, gmt_modified) select ?, ?, count(*), ?, ?, ?, ?, ? from nacos.config_info;";
+                = "insert into group_capacity (group_id, quota, `usage`, `max_size`, max_aggr_count, max_aggr_size, "
+                + "gmt_create, gmt_modified) select ?, ?, count(*), ?, ?, ?, ?, ? from config_info;";
         } else {
             // 注意这里要加"tenant_id = ''"条件
             sql =
-                "insert into nacos.group_capacity (group_id, quota, `usage`, `max_size`, max_aggr_count, max_aggr_size, "
-                    + "gmt_create, gmt_modified) select ?, ?, count(*), ?, ?, ?, ?, ? from nacos.config_info where "
+                "insert into group_capacity (group_id, quota, `usage`, `max_size`, max_aggr_count, max_aggr_size, "
+                    + "gmt_create, gmt_modified) select ?, ?, count(*), ?, ?, ?, ?, ? from config_info where "
                     + "group_id=? and tenant_id = '';";
         }
         return insertGroupCapacity(sql, capacity);
@@ -115,7 +115,7 @@ public class GroupCapacityPersistService {
         if (clusterCapacity != null) {
             return clusterCapacity.getUsage();
         }
-        String sql = "SELECT count(*) FROM nacos.config_info";
+        String sql = "SELECT count(*) FROM config_info";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class);
         if (result == null) {
             throw new IllegalArgumentException("configInfoCount error");
@@ -154,7 +154,7 @@ public class GroupCapacityPersistService {
 
     public boolean incrementUsageWithDefaultQuotaLimit(GroupCapacity groupCapacity) {
         String sql =
-            "UPDATE nacos.group_capacity SET `usage` = `usage` + 1, gmt_modified = ? WHERE group_id = ? AND `usage` <"
+            "UPDATE group_capacity SET `usage` = `usage` + 1, gmt_modified = ? WHERE group_id = ? AND `usage` <"
                 + " ? AND quota = 0";
         try {
             int affectRow = jdbcTemplate.update(sql,
@@ -168,7 +168,7 @@ public class GroupCapacityPersistService {
 
     public boolean incrementUsageWithQuotaLimit(GroupCapacity groupCapacity) {
         String sql
-            = "UPDATE nacos.group_capacity SET `usage` = `usage` + 1, gmt_modified = ? WHERE group_id = ? AND `usage` < "
+            = "UPDATE group_capacity SET `usage` = `usage` + 1, gmt_modified = ? WHERE group_id = ? AND `usage` < "
             + "quota AND quota != 0";
         try {
             return jdbcTemplate.update(sql,
@@ -181,7 +181,7 @@ public class GroupCapacityPersistService {
     }
 
     public boolean incrementUsage(GroupCapacity groupCapacity) {
-        String sql = "UPDATE nacos.group_capacity SET `usage` = `usage` + 1, gmt_modified = ? WHERE group_id = ?";
+        String sql = "UPDATE group_capacity SET `usage` = `usage` + 1, gmt_modified = ? WHERE group_id = ?";
         try {
             int affectRow = jdbcTemplate.update(sql,
                 groupCapacity.getGmtModified(), groupCapacity.getGroup());
@@ -194,7 +194,7 @@ public class GroupCapacityPersistService {
 
     public boolean decrementUsage(GroupCapacity groupCapacity) {
         String sql =
-            "UPDATE nacos.group_capacity SET `usage` = `usage` - 1, gmt_modified = ? WHERE group_id = ? AND `usage` > 0";
+            "UPDATE group_capacity SET `usage` = `usage` - 1, gmt_modified = ? WHERE group_id = ? AND `usage` > 0";
         try {
             return jdbcTemplate.update(sql,
                 groupCapacity.getGmtModified(), groupCapacity.getGroup()) == 1;
@@ -207,7 +207,7 @@ public class GroupCapacityPersistService {
     public boolean updateGroupCapacity(String group, Integer quota, Integer maxSize, Integer maxAggrCount,
                                        Integer maxAggrSize) {
         List<Object> argList = Lists.newArrayList();
-        StringBuilder sql = new StringBuilder("update nacos.group_capacity set");
+        StringBuilder sql = new StringBuilder("update group_capacity set");
         if (quota != null) {
             sql.append(" quota = ?,");
             argList.add(quota);
@@ -248,7 +248,7 @@ public class GroupCapacityPersistService {
     public boolean correctUsage(String group, Timestamp gmtModified) {
         String sql;
         if (CLUSTER.equals(group)) {
-            sql = "UPDATE nacos.group_capacity SET `usage` = (SELECT count(*) FROM nacos.config_info), gmt_modified = ? WHERE "
+            sql = "UPDATE group_capacity SET `usage` = (SELECT count(*) FROM config_info), gmt_modified = ? WHERE "
                 + "group_id = ?";
             try {
                 return jdbcTemplate.update(sql, gmtModified, group) == 1;
@@ -258,7 +258,7 @@ public class GroupCapacityPersistService {
             }
         } else {
             // 注意这里要加"tenant_id = ''"条件
-            sql = "UPDATE nacos.group_capacity SET `usage` = (SELECT count(*) FROM nacos.config_info WHERE group_id=? AND "
+            sql = "UPDATE group_capacity SET `usage` = (SELECT count(*) FROM config_info WHERE group_id=? AND "
                 + "tenant_id = ''), gmt_modified = ? WHERE group_id = ?";
             try {
                 return jdbcTemplate.update(sql, group, gmtModified, group) == 1;
@@ -277,10 +277,10 @@ public class GroupCapacityPersistService {
      * @return GroupCapacity列表
      */
     public List<GroupCapacity> getCapacityList4CorrectUsage(long lastId, int pageSize) {
-        String sql = "SELECT id, group_id FROM nacos.group_capacity WHERE id>? LIMIT ?";
+        String sql = "SELECT id, group_id FROM group_capacity WHERE id>? LIMIT ?";
 
         if (STANDALONE_MODE && !PropertyUtil.isStandaloneUseMysql()) {
-            sql = "SELECT id, group_id FROM nacos.group_capacity WHERE id>? OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
+            sql = "SELECT id, group_id FROM group_capacity WHERE id>? OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
         }
         try {
             return jdbcTemplate.query(sql, new Object[] {lastId, pageSize},
@@ -305,7 +305,7 @@ public class GroupCapacityPersistService {
                 @Override
                 public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
                     PreparedStatement ps = connection.prepareStatement(
-                        "DELETE FROM nacos.group_capacity WHERE group_id = ?;");
+                        "DELETE FROM group_capacity WHERE group_id = ?;");
                     ps.setString(1, group);
                     return ps;
                 }

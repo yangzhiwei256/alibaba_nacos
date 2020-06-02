@@ -41,7 +41,7 @@ import java.util.ArrayList;
 public class UserPersistService extends PersistService {
 
     public void createUser(String username, String password) {
-        String sql = "INSERT into nacos.users (username, password, enabled) VALUES (?, ?, ?)";
+        String sql = "INSERT into users (username, password, enabled) VALUES (?, ?, ?)";
 
         try {
             jdbcTemplate.update(sql, username, password, true);
@@ -52,7 +52,7 @@ public class UserPersistService extends PersistService {
     }
 
     public void deleteUser(String username) {
-        String sql = "DELETE from nacos.users WHERE username=?";
+        String sql = "DELETE from users WHERE username=?";
         try {
             jdbcTemplate.update(sql, username);
         } catch (CannotGetJdbcConnectionException e) {
@@ -64,7 +64,7 @@ public class UserPersistService extends PersistService {
     public void updateUserPassword(String username, String password) {
         try {
             jdbcTemplate.update(
-                "UPDATE nacos.users SET password = ? WHERE username=?",
+                "UPDATE users SET password = ? WHERE username=?",
                 password, username);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -73,7 +73,7 @@ public class UserPersistService extends PersistService {
     }
 
     public User findUserByUsername(String username) {
-        String sql = "SELECT username,password FROM nacos.users WHERE username=? ";
+        String sql = "SELECT username,password FROM users WHERE username=? ";
         try {
             return this.jdbcTemplate.queryForObject(sql, new Object[]{username}, USER_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -91,9 +91,9 @@ public class UserPersistService extends PersistService {
 
         PaginationHelper<User> helper = new PaginationHelper<>();
 
-        String sqlCountRows = "select count(*) from nacos.users where ";
+        String sqlCountRows = "select count(*) from users where ";
         String sqlFetchRows
-            = "select username,password from nacos.users where ";
+            = "select username,password from users where ";
 
         String where = " 1=1 ";
 

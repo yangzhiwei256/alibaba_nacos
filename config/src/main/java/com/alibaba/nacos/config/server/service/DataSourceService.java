@@ -26,44 +26,39 @@ import java.io.IOException;
  * @author Nacos
  */
 public interface DataSourceService {
+
     /**
-     * reload
-     *
+     * 刷新数据源
      * @throws IOException exception
      */
     void reload() throws IOException;
 
     /**
-     * check master db
-     *
+     * 检查是否是master db
      * @return is master
      */
     boolean checkMasterWritable();
 
     /**
-     * get jdbc template
-     *
+     * 获取JDBC模板
      * @return JdbcTemplate
      */
     JdbcTemplate getJdbcTemplate();
 
     /**
-     * get transaction template
-     *
+     * 获取事务模板
      * @return TransactionTemplate
      */
     TransactionTemplate getTransactionTemplate();
 
     /**
-     * get current db url
-     *
+     * 获取数据库路径
      * @return
      */
     String getCurrentDBUrl();
 
     /**
-     * get heath
-     *
+     * 检查数据库健康
      * @return heath info
      */
     String getHealth();

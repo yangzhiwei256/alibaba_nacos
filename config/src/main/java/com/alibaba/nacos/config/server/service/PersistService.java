@@ -70,13 +70,13 @@ public class PersistService {
 
     private DataSourceService dataSourceService;
 
-    private static final String SQL_FIND_ALL_CONFIG_INFO = "select id,data_id,group_id,tenant_id,app_name,content,type,md5,gmt_create,gmt_modified,src_user,src_ip,c_desc,c_use,effect,c_schema from nacos.config_info";
+    private static final String SQL_FIND_ALL_CONFIG_INFO = "select id,data_id,group_id,tenant_id,app_name,content,type,md5,gmt_create,gmt_modified,src_user,src_ip,c_desc,c_use,effect,c_schema from config_info";
 
-    private static final String SQL_TENANT_INFO_COUNT_BY_TENANT_ID = "select count(1) from nacos.tenant_info where tenant_id = ?";
+    private static final String SQL_TENANT_INFO_COUNT_BY_TENANT_ID = "select count(1) from tenant_info where tenant_id = ?";
 
-    private static final String SQL_FIND_CONFIG_INFO_BY_IDS = "SELECT ID,data_id,group_id,tenant_id,app_name,content,md5 FROM nacos.config_info WHERE ";
+    private static final String SQL_FIND_CONFIG_INFO_BY_IDS = "SELECT ID,data_id,group_id,tenant_id,app_name,content,md5 FROM config_info WHERE ";
 
-    private static final String SQL_DELETE_CONFIG_INFO_BY_IDS = "DELETE FROM nacos.config_info WHERE ";
+    private static final String SQL_DELETE_CONFIG_INFO_BY_IDS = "DELETE FROM config_info WHERE ";
 
     /**
      * @author klw
@@ -315,7 +315,6 @@ public class PersistService {
         @Override
         public ConfigInfo4Beta mapRow(ResultSet rs, int rowNum) throws SQLException {
             ConfigInfo4Beta info = new ConfigInfo4Beta();
-
             info.setDataId(rs.getString("data_id"));
             info.setGroup(rs.getString("group_id"));
             info.setTenant(rs.getString("tenant_id"));
@@ -497,7 +496,7 @@ public class PersistService {
         return this.dataSourceService.getCurrentDBUrl();
     }
 
-    // ----------------------- nacos.config_info 表 insert update delete
+    // ----------------------- config_info 表 insert update delete
 
     /**
      * 添加普通配置信息，发布数据变更事件
@@ -535,7 +534,7 @@ public class PersistService {
         try {
             String md5 = MD5.getInstance().getMD5String(configInfo.getContent());
             jdbcTemplate.update(
-                "INSERT INTO nacos.config_info_beta(data_id,group_id,tenant_id,app_name,content,md5,beta_ips,src_ip,"
+                "INSERT INTO config_info_beta(data_id,group_id,tenant_id,app_name,content,md5,beta_ips,src_ip,"
                     + "src_user,gmt_create,gmt_modified) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                 configInfo.getDataId(), configInfo.getGroup(), tenantTmp, appNameTmp, configInfo.getContent(), md5,
                 betaIps, srcIp, srcUser, time, time);
@@ -561,7 +560,7 @@ public class PersistService {
         try {
             String md5 = MD5.getInstance().getMD5String(configInfo.getContent());
             jdbcTemplate.update(
-                "INSERT INTO nacos.config_info_tag(data_id,group_id,tenant_id,tag_id,app_name,content,md5,src_ip,src_user,"
+                "INSERT INTO config_info_tag(data_id,group_id,tenant_id,tag_id,app_name,content,md5,src_ip,src_user,"
                     + "gmt_create,gmt_modified) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                 configInfo.getDataId(), configInfo.getGroup(), tenantTmp, tagTmp, appNameTmp, configInfo.getContent(),
                 md5,
@@ -625,7 +624,7 @@ public class PersistService {
         try {
             String md5 = MD5.getInstance().getMD5String(configInfo.getContent());
             jdbcTemplate.update(
-                "UPDATE nacos.config_info_beta SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=? WHERE "
+                "UPDATE config_info_beta SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=? WHERE "
                     + "data_id=? AND group_id=? AND tenant_id=?",
                 configInfo.getContent(), md5, srcIp, srcUser, time, appNameTmp, configInfo.getDataId(),
                 configInfo.getGroup(), tenantTmp);
@@ -651,7 +650,7 @@ public class PersistService {
         try {
             String md5 = MD5.getInstance().getMD5String(configInfo.getContent());
             jdbcTemplate.update(
-                "UPDATE nacos.config_info_tag SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=? WHERE "
+                "UPDATE config_info_tag SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=? WHERE "
                     + "data_id=? AND group_id=? AND tenant_id=? AND tag_id=?",
                 configInfo.getContent(), md5, srcIp, srcUser, time, appNameTmp, configInfo.getDataId(),
                 configInfo.getGroup(), tenantTmp, tagTmp);
@@ -691,7 +690,7 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         try {
             jdbcTemplate.update(
-                "UPDATE nacos.config_info SET md5 = ? WHERE data_id=? AND group_id=? AND tenant_id=? AND gmt_modified=?",
+                "UPDATE config_info SET md5 = ? WHERE data_id=? AND group_id=? AND tenant_id=? AND gmt_modified=?",
                 md5, dataId, group, tenantTmp, lastTime);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -800,7 +799,7 @@ public class PersistService {
                 try {
                     ConfigInfo configInfo = findConfigInfo4Beta(dataId, group, tenant);
                     if (configInfo != null) {
-                        jdbcTemplate.update("DELETE FROM nacos.config_info_beta WHERE data_id=? AND group_id=? AND tenant_id=?", dataId,
+                        jdbcTemplate.update("DELETE FROM config_info_beta WHERE data_id=? AND group_id=? AND tenant_id=?", dataId,
                             group, tenantTmp);
                     }
                 } catch (CannotGetJdbcConnectionException e) {
@@ -823,13 +822,13 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         final Timestamp now = new Timestamp(System.currentTimeMillis());
         String select
-            = "SELECT content FROM nacos.config_info_aggr WHERE data_id = ? AND group_id = ? AND tenant_id = ?  AND "
+            = "SELECT content FROM config_info_aggr WHERE data_id = ? AND group_id = ? AND tenant_id = ?  AND "
             + "datum_id = ?";
         String insert
-            = "INSERT INTO nacos.config_info_aggr(data_id, group_id, tenant_id, datum_id, app_name, content, gmt_modified) "
+            = "INSERT INTO config_info_aggr(data_id, group_id, tenant_id, datum_id, app_name, content, gmt_modified) "
             + "VALUES(?,?,?,?,?,?,?) ";
         String update
-            = "UPDATE nacos.config_info_aggr SET content = ? , gmt_modified = ? WHERE data_id = ? AND group_id = ? AND "
+            = "UPDATE config_info_aggr SET content = ? , gmt_modified = ? WHERE data_id = ? AND group_id = ? AND "
             + "tenant_id = ? AND datum_id = ?";
 
         try {
@@ -857,7 +856,7 @@ public class PersistService {
     public void removeSingleAggrConfigInfo(final String dataId,
                                            final String group, final String tenant, final String datumId) {
         final String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
-        String sql = "DELETE FROM nacos.config_info_aggr WHERE data_id=? AND group_id=? AND tenant_id=? AND datum_id=?";
+        String sql = "DELETE FROM config_info_aggr WHERE data_id=? AND group_id=? AND tenant_id=? AND datum_id=?";
 
         try {
             this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
@@ -881,7 +880,7 @@ public class PersistService {
      */
     public void removeAggrConfigInfo(final String dataId, final String group, final String tenant) {
         final String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
-        String sql = "DELETE FROM nacos.config_info_aggr WHERE data_id=? AND group_id=? AND tenant_id=?";
+        String sql = "DELETE FROM config_info_aggr WHERE data_id=? AND group_id=? AND tenant_id=?";
 
         try {
             this.jdbcTemplate.update(sql, new PreparedStatementSetter() {
@@ -915,7 +914,7 @@ public class PersistService {
         }
         datumString.deleteCharAt(datumString.length() - 1);
         final String sql =
-            "delete from nacos.config_info_aggr where data_id=? and group_id=? and tenant_id=? and datum_id in ("
+            "delete from config_info_aggr where data_id=? and group_id=? and tenant_id=? and datum_id in ("
                 + datumString.toString() + ")";
         try {
             jdbcTemplate.update(sql, dataId, group, tenantTmp);
@@ -930,7 +929,7 @@ public class PersistService {
      * 删除startTime前的数据
      */
     public void removeConfigHistory(final Timestamp startTime, final int limitSize) {
-        String sql = "delete from nacos.his_config_info where gmt_modified < ? limit ?";
+        String sql = "delete from his_config_info where gmt_modified < ? limit ?";
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         try {
             helper.updateLimit(jdbcTemplate, sql, new Object[]{startTime, limitSize});
@@ -944,7 +943,7 @@ public class PersistService {
      * 获取指定时间前配置条数
      */
     public int findConfigHistoryCountByTime(final Timestamp startTime) {
-        String sql = "SELECT COUNT(*) FROM nacos.his_config_info WHERE gmt_modified < ?";
+        String sql = "SELECT COUNT(*) FROM his_config_info WHERE gmt_modified < ?";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class, startTime);
         if (result == null) {
             throw new IllegalArgumentException("configInfoBetaCount error");
@@ -956,7 +955,7 @@ public class PersistService {
      * 获取最大maxId
      */
     public long findConfigMaxId() {
-        String sql = "SELECT max(id) FROM nacos.config_info";
+        String sql = "SELECT max(id) FROM config_info";
         try {
             return jdbcTemplate.queryForObject(sql, Integer.class);
         } catch (NullPointerException e) {
@@ -1021,7 +1020,7 @@ public class PersistService {
                         removeAggrConfigInfo(dataId, group, tenant);
                         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
                         String sql
-                            = "INSERT INTO nacos.config_info_aggr(data_id, group_id, tenant_id, datum_id, app_name, "
+                            = "INSERT INTO config_info_aggr(data_id, group_id, tenant_id, datum_id, app_name, "
                             + "content, gmt_modified) VALUES(?,?,?,?,?,?,?) ";
                         for (Entry<String, String> datumEntry : datumMap.entrySet()) {
                             jdbcTemplate.update(sql, dataId, group, tenantTmp, datumEntry.getKey(), appNameTmp,
@@ -1050,7 +1049,7 @@ public class PersistService {
      */
     @Deprecated
     public List<ConfigInfo> findAllDataIdAndGroup() {
-        String sql = "SELECT DISTINCT data_id, group_id FROM nacos.config_info";
+        String sql = "SELECT DISTINCT data_id, group_id FROM config_info";
 
         try {
             return jdbcTemplate.query(sql, new Object[]{}, CONFIG_INFO_ROW_MAPPER);
@@ -1072,7 +1071,7 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         try {
             return this.jdbcTemplate.queryForObject(
-                "SELECT ID,data_id,group_id,tenant_id,app_name,content,beta_ips FROM nacos.config_info_beta WHERE data_id=?"
+                "SELECT ID,data_id,group_id,tenant_id,app_name,content,beta_ips FROM config_info_beta WHERE data_id=?"
                     + " AND group_id=? AND tenant_id=?",
                 new Object[]{dataId, group, tenantTmp}, CONFIG_INFO4BETA_ROW_MAPPER);
         } catch (EmptyResultDataAccessException e) { // 表明数据不存在, 返回null
@@ -1092,7 +1091,7 @@ public class PersistService {
         String tagTmp = StringUtils.isBlank(tag) ? StringUtils.EMPTY : tag.trim();
         try {
             return this.jdbcTemplate.queryForObject(
-                "SELECT ID,data_id,group_id,tenant_id,tag_id,app_name,content FROM nacos.config_info_tag WHERE data_id=? "
+                "SELECT ID,data_id,group_id,tenant_id,tag_id,app_name,content FROM config_info_tag WHERE data_id=? "
                     + "AND group_id=? AND tenant_id=? AND tag_id=?",
                 new Object[]{dataId, group, tenantTmp, tagTmp}, CONFIG_INFO4TAG_ROW_MAPPER);
         } catch (EmptyResultDataAccessException e) { // 表明数据不存在, 返回null
@@ -1111,7 +1110,7 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         try {
             return this.jdbcTemplate.queryForObject(
-                "SELECT ID,data_id,group_id,tenant_id,app_name,content FROM nacos.config_info WHERE data_id=? AND "
+                "SELECT ID,data_id,group_id,tenant_id,app_name,content FROM config_info WHERE data_id=? AND "
                     + "group_id=? AND tenant_id=? AND app_name=?",
                 new Object[]{dataId, group, tenantTmp, appName}, CONFIG_INFO_ROW_MAPPER);
         } catch (EmptyResultDataAccessException e) { // 表明数据不存在, 返回null
@@ -1136,12 +1135,12 @@ public class PersistService {
         paramList.add(tenantTmp);
 
         StringBuilder sql = new StringBuilder(
-            "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where data_id=? and group_id=? "
+            "select ID,data_id,group_id,tenant_id,app_name,content from config_info where data_id=? and group_id=? "
                 + "and tenant_id=? ");
         if (StringUtils.isNotBlank(configTags)) {
             sql = new StringBuilder(
-                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from nacos.config_info  a left join "
-                    + "nacos.config_tags_relation b on a.id=b.id where a.data_id=? and a.group_id=? and a.tenant_id=? ");
+                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from config_info  a left join "
+                    + "config_tags_relation b on a.id=b.id where a.data_id=? and a.group_id=? and a.tenant_id=? ");
             sql.append(" and b.tag_name in (");
             String[] tagArr = configTags.split(",");
             for (int i = 0; i < tagArr.length; i++) {
@@ -1182,7 +1181,7 @@ public class PersistService {
         try {
             return this.jdbcTemplate
                 .queryForObject(
-                    "SELECT ID,data_id,group_id,content FROM nacos.config_info WHERE data_id=? AND group_id=? AND "
+                    "SELECT ID,data_id,group_id,content FROM config_info WHERE data_id=? AND group_id=? AND "
                         + "tenant_id=?",
                     new Object[]{dataId, group, StringUtils.EMPTY},
                     CONFIG_INFO_BASE_ROW_MAPPER);
@@ -1204,7 +1203,7 @@ public class PersistService {
         try {
             return this.jdbcTemplate
                 .queryForObject(
-                    "SELECT ID,data_id,group_id,tenant_id,app_name,content FROM nacos.config_info WHERE ID=?",
+                    "SELECT ID,data_id,group_id,tenant_id,app_name,content FROM config_info WHERE ID=?",
                     new Object[]{id}, CONFIG_INFO_ROW_MAPPER);
         } catch (EmptyResultDataAccessException e) { // 表明数据不存在
             return null;
@@ -1227,8 +1226,8 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         try {
-            return helper.fetchPage(this.jdbcTemplate, "select count(*) from nacos.config_info where data_id=? and tenant_id=?",
-                "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where data_id=? and "
+            return helper.fetchPage(this.jdbcTemplate, "select count(*) from config_info where data_id=? and tenant_id=?",
+                "select ID,data_id,group_id,tenant_id,app_name,content from config_info where data_id=? and "
                     + "tenant_id=?",
                 new Object[]{dataId, tenantTmp}, pageNo, pageSize, CONFIG_INFO_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -1251,8 +1250,8 @@ public class PersistService {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         try {
             return helper.fetchPage(this.jdbcTemplate,
-                "select count(*) from nacos.config_info where data_id=? and tenant_id=? and app_name=?",
-                "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where data_id=? and "
+                "select count(*) from config_info where data_id=? and tenant_id=? and app_name=?",
+                "select ID,data_id,group_id,tenant_id,app_name,content from config_info where data_id=? and "
                     + "tenant_id=? and app_name=?",
                 new Object[]{dataId, tenantTmp, appName}, pageNo, pageSize, CONFIG_INFO_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -1268,20 +1267,20 @@ public class PersistService {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         final String appName = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("appName");
         final String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
-        StringBuilder sqlCount = new StringBuilder("select count(*) from nacos.config_info where data_id=? and tenant_id=? ");
+        StringBuilder sqlCount = new StringBuilder("select count(*) from config_info where data_id=? and tenant_id=? ");
         StringBuilder sql = new StringBuilder(
-            "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where data_id=? and tenant_id=? ");
+            "select ID,data_id,group_id,tenant_id,app_name,content from config_info where data_id=? and tenant_id=? ");
         List<String> paramList = new ArrayList<String>();
         paramList.add(dataId);
         paramList.add(tenantTmp);
         if (StringUtils.isNotBlank(configTags)) {
             sqlCount = new StringBuilder(
-                "select count(*) from nacos.config_info  a left join nacos.config_tags_relation b on a.id=b.id where a.data_id=? "
+                "select count(*) from config_info  a left join config_tags_relation b on a.id=b.id where a.data_id=? "
                     + "and a.tenant_id=? ");
 
             sql = new StringBuilder(
-                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from nacos.config_info  a left join "
-                    + "nacos.config_tags_relation b on a.id=b.id where a.data_id=? and a.tenant_id=? ");
+                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from config_info  a left join "
+                    + "config_tags_relation b on a.id=b.id where a.data_id=? and a.tenant_id=? ");
 
             sqlCount.append(" and b.tag_name in (");
             sql.append(" and b.tag_name in (");
@@ -1326,16 +1325,16 @@ public class PersistService {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         final String appName = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("appName");
         final String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
-        String sqlCount = "select count(*) from nacos.config_info";
-        String sql = "select ID,data_id,group_id,tenant_id,app_name,content,type from nacos.config_info";
+        String sqlCount = "select count(*) from config_info";
+        String sql = "select ID,data_id,group_id,tenant_id,app_name,content,type from config_info";
         StringBuilder where = new StringBuilder(" where ");
         List<String> paramList = new ArrayList<String>();
         paramList.add(tenantTmp);
         if (StringUtils.isNotBlank(configTags)) {
-            sqlCount = "select count(*) from nacos.config_info  a left join nacos.config_tags_relation b on a.id=b.id";
+            sqlCount = "select count(*) from config_info  a left join config_tags_relation b on a.id=b.id";
             sql
-                = "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from nacos.config_info  a left join "
-                + "nacos.config_tags_relation b on a.id=b.id";
+                = "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from config_info  a left join "
+                + "config_tags_relation b on a.id=b.id";
 
             where.append(" a.tenant_id=? ");
 
@@ -1401,8 +1400,8 @@ public class PersistService {
             return helper
                 .fetchPage(
                     this.jdbcTemplate,
-                    "select count(*) from nacos.config_info where data_id=? and tenant_id=?",
-                    "select ID,data_id,group_id,content from nacos.config_info where data_id=? and tenant_id=?",
+                    "select count(*) from config_info where data_id=? and tenant_id=?",
+                    "select ID,data_id,group_id,content from config_info where data_id=? and tenant_id=?",
                     new Object[]{dataId, StringUtils.EMPTY}, pageNo, pageSize,
                     CONFIG_INFO_BASE_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -1424,8 +1423,8 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         try {
-            return helper.fetchPage(this.jdbcTemplate, "select count(*) from nacos.config_info where group_id=? and tenant_id=?",
-                "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where group_id=? and "
+            return helper.fetchPage(this.jdbcTemplate, "select count(*) from config_info where group_id=? and tenant_id=?",
+                "select ID,data_id,group_id,tenant_id,app_name,content from config_info where group_id=? and "
                     + "tenant_id=?",
                 new Object[]{group, tenantTmp}, pageNo, pageSize, CONFIG_INFO_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -1449,8 +1448,8 @@ public class PersistService {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         try {
             return helper.fetchPage(this.jdbcTemplate,
-                "select count(*) from nacos.config_info where group_id=? and tenant_id=? and app_name =?",
-                "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where group_id=? and "
+                "select count(*) from config_info where group_id=? and tenant_id=? and app_name =?",
+                "select ID,data_id,group_id,tenant_id,app_name,content from config_info where group_id=? and "
                     + "tenant_id=? and app_name =?",
                 new Object[]{group, tenantTmp, appName}, pageNo, pageSize, CONFIG_INFO_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -1468,19 +1467,19 @@ public class PersistService {
         final String appName = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("appName");
         final String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
         StringBuilder sqlCount = new StringBuilder(
-            "select count(*) from nacos.config_info where group_id=? and tenant_id=? ");
+            "select count(*) from config_info where group_id=? and tenant_id=? ");
         StringBuilder sql = new StringBuilder(
-            "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where group_id=? and tenant_id=? ");
+            "select ID,data_id,group_id,tenant_id,app_name,content from config_info where group_id=? and tenant_id=? ");
         List<String> paramList = new ArrayList<String>();
         paramList.add(group);
         paramList.add(tenantTmp);
         if (StringUtils.isNotBlank(configTags)) {
             sqlCount = new StringBuilder(
-                "select count(*) from nacos.config_info  a left join nacos.config_tags_relation b on a.id=b.id where a.group_id=?"
+                "select count(*) from config_info  a left join config_tags_relation b on a.id=b.id where a.group_id=?"
                     + " and a.tenant_id=? ");
             sql = new StringBuilder(
-                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from nacos.config_info  a left join "
-                    + "nacos.config_tags_relation b on a.id=b.id where a.group_id=? and a.tenant_id=? ");
+                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from config_info  a left join "
+                    + "config_tags_relation b on a.id=b.id where a.group_id=? and a.tenant_id=? ");
 
             sqlCount.append(" and b.tag_name in (");
             sql.append(" and b.tag_name in (");
@@ -1531,8 +1530,8 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         try {
-            return helper.fetchPage(this.jdbcTemplate, "select count(*) from nacos.config_info where tenant_id like ? and app_name=?",
-                "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where tenant_id like ? and "
+            return helper.fetchPage(this.jdbcTemplate, "select count(*) from config_info where tenant_id like ? and app_name=?",
+                "select ID,data_id,group_id,tenant_id,app_name,content from config_info where tenant_id like ? and "
                     + "app_name=?",
                 new Object[]{generateLikeArgument(tenantTmp), appName}, pageNo, pageSize,
                 CONFIG_INFO_ROW_MAPPER);
@@ -1549,19 +1548,19 @@ public class PersistService {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         final String appName = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("appName");
         final String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
-        StringBuilder sqlCount = new StringBuilder("select count(*) from nacos.config_info where tenant_id like ? ");
+        StringBuilder sqlCount = new StringBuilder("select count(*) from config_info where tenant_id like ? ");
         StringBuilder sql = new StringBuilder(
-            "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where tenant_id like ? ");
+            "select ID,data_id,group_id,tenant_id,app_name,content from config_info where tenant_id like ? ");
         List<String> paramList = new ArrayList<String>();
         paramList.add(tenantTmp);
         if (StringUtils.isNotBlank(configTags)) {
             sqlCount = new StringBuilder(
-                "select count(*) from nacos.config_info a left join nacos.config_tags_relation b on a.id=b.id where a.tenant_id=?"
+                "select count(*) from config_info a left join config_tags_relation b on a.id=b.id where a.tenant_id=?"
                     + " ");
 
             sql = new StringBuilder(
-                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from nacos.config_info  a left join "
-                    + "nacos.config_tags_relation b on a.id=b.id where a.tenant_id=? ");
+                "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from config_info  a left join "
+                    + "config_tags_relation b on a.id=b.id where a.tenant_id=? ");
 
             sqlCount.append(" and b.tag_name in (");
             sql.append(" and b.tag_name in (");
@@ -1615,8 +1614,8 @@ public class PersistService {
             return helper
                 .fetchPage(
                     this.jdbcTemplate,
-                    "select count(*) from nacos.config_info where group_id=? and tenant_id=?",
-                    "select ID,data_id,group_id,content from nacos.config_info where group_id=? and tenant_id=?",
+                    "select count(*) from config_info where group_id=? and tenant_id=?",
+                    "select ID,data_id,group_id,content from config_info where group_id=? and tenant_id=?",
                     new Object[]{group, StringUtils.EMPTY}, pageNo, pageSize,
                     CONFIG_INFO_BASE_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -1629,7 +1628,7 @@ public class PersistService {
      * 返回配置项个数
      */
     public int configInfoCount() {
-        String sql = " SELECT COUNT(ID) FROM nacos.config_info ";
+        String sql = " SELECT COUNT(ID) FROM config_info ";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class);
         if (result == null) {
             throw new IllegalArgumentException("configInfoCount error");
@@ -1641,7 +1640,7 @@ public class PersistService {
      * 返回配置项个数
      */
     public int configInfoCount(String tenant) {
-        String sql = " SELECT COUNT(ID) FROM nacos.config_info where tenant_id like '" + tenant + "'";
+        String sql = " SELECT COUNT(ID) FROM config_info where tenant_id like '" + tenant + "'";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class);
         if (result == null) {
             throw new IllegalArgumentException("configInfoCount error");
@@ -1653,7 +1652,7 @@ public class PersistService {
      * 返回beta配置项个数
      */
     public int configInfoBetaCount() {
-        String sql = " SELECT COUNT(ID) FROM nacos.config_info_beta ";
+        String sql = " SELECT COUNT(ID) FROM config_info_beta ";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class);
         if (result == null) {
             throw new IllegalArgumentException("configInfoBetaCount error");
@@ -1665,7 +1664,7 @@ public class PersistService {
      * 返回beta配置项个数
      */
     public int configInfoTagCount() {
-        String sql = " SELECT COUNT(ID) FROM nacos.config_info_tag ";
+        String sql = " SELECT COUNT(ID) FROM config_info_tag ";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class);
         if (result == null) {
             throw new IllegalArgumentException("configInfoBetaCount error");
@@ -1674,20 +1673,20 @@ public class PersistService {
     }
 
     public List<String> getTenantIdList(int page, int pageSize) {
-        String sql = "SELECT tenant_id FROM nacos.config_info WHERE tenant_id != '' GROUP BY tenant_id LIMIT ?, ?";
+        String sql = "SELECT tenant_id FROM config_info WHERE tenant_id != '' GROUP BY tenant_id LIMIT ?, ?";
         int from = (page - 1) * pageSize;
         return jdbcTemplate.queryForList(sql, String.class, from, pageSize);
     }
 
     public List<String> getGroupIdList(int page, int pageSize) {
-        String sql = "SELECT group_id FROM nacos.config_info WHERE tenant_id ='' GROUP BY group_id LIMIT ?, ?";
+        String sql = "SELECT group_id FROM config_info WHERE tenant_id ='' GROUP BY group_id LIMIT ?, ?";
         int from = (page - 1) * pageSize;
         return jdbcTemplate.queryForList(sql, String.class, from, pageSize);
     }
 
     public int aggrConfigInfoCount(String dataId, String group, String tenant) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
-        String sql = " SELECT COUNT(ID) FROM nacos.config_info_aggr WHERE data_id = ? AND group_id = ? AND tenant_id = ?";
+        String sql = " SELECT COUNT(ID) FROM config_info_aggr WHERE data_id = ? AND group_id = ? AND tenant_id = ?";
         Integer result = jdbcTemplate.queryForObject(sql, Integer.class, dataId, group, tenantTmp);
         if (result == null) {
             throw new IllegalArgumentException("aggrConfigInfoCount error");
@@ -1710,7 +1709,7 @@ public class PersistService {
         }
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         StringBuilder sql = new StringBuilder(
-            " SELECT COUNT(*) FROM nacos.config_info_aggr WHERE data_id = ? and group_id = ? and tenant_id = ? and "
+            " SELECT COUNT(*) FROM config_info_aggr WHERE data_id = ? and group_id = ? and tenant_id = ? and "
                 + "datum_id");
         if (isIn) {
             sql.append(" in (");
@@ -1743,13 +1742,13 @@ public class PersistService {
      */
     public Page<ConfigInfo> findAllConfigInfo(final int pageNo, final int pageSize, final String tenant) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
-        String sqlCountRows = "SELECT COUNT(*) FROM nacos.config_info";
+        String sqlCountRows = "SELECT COUNT(*) FROM config_info";
         String sqlFetchRows = " SELECT t.id,data_id,group_id,tenant_id,app_name,content,md5 "
             + " FROM (                               "
-            + "   SELECT id FROM nacos.config_info         "
+            + "   SELECT id FROM config_info         "
             + "   WHERE tenant_id like ?                  "
             + "   ORDER BY id LIMIT ?,?             "
-            + " ) g, nacos.config_info t                   "
+            + " ) g, config_info t                   "
             + " WHERE g.id = t.id                    ";
 
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
@@ -1774,10 +1773,10 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String select = " SELECT data_id,group_id,app_name "
             + " FROM (                               "
-            + "   SELECT id FROM nacos.config_info         "
+            + "   SELECT id FROM config_info         "
             + "   WHERE tenant_id LIKE ?                  "
             + "   ORDER BY id LIMIT ?, ?             "
-            + " ) g, nacos.config_info t                   "
+            + " ) g, config_info t                   "
             + " WHERE g.id = t.id                    ";
 
         final int totalCount = configInfoCount(tenant);
@@ -1823,12 +1822,12 @@ public class PersistService {
     @Deprecated
     public Page<ConfigInfoBase> findAllConfigInfoBase(final int pageNo,
                                                       final int pageSize) {
-        String sqlCountRows = "SELECT COUNT(*) FROM nacos.config_info";
+        String sqlCountRows = "SELECT COUNT(*) FROM config_info";
         String sqlFetchRows = " SELECT t.id,data_id,group_id,content,md5 "
             + " FROM (                               "
-            + "   SELECT id FROM nacos.config_info         "
+            + "   SELECT id FROM config_info         "
             + "   ORDER BY id LIMIT ?,?             "
-            + " ) g, nacos.config_info t                   "
+            + " ) g, config_info t                   "
             + " WHERE g.id = t.id                    ";
 
         PaginationHelper<ConfigInfoBase> helper = new PaginationHelper<ConfigInfoBase>();
@@ -1924,12 +1923,12 @@ public class PersistService {
 
     public Page<ConfigInfoWrapper> findAllConfigInfoForDumpAll(
         final int pageNo, final int pageSize) {
-        String sqlCountRows = "select count(*) from nacos.config_info";
+        String sqlCountRows = "select count(*) from config_info";
         String sqlFetchRows = " SELECT t.id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified "
             + " FROM (                               "
-            + "   SELECT id FROM nacos.config_info         "
+            + "   SELECT id FROM config_info         "
             + "   ORDER BY id LIMIT ?,?             "
-            + " ) g, nacos.config_info t                   "
+            + " ) g, config_info t                   "
             + " WHERE g.id = t.id                    ";
         PaginationHelper<ConfigInfoWrapper> helper = new PaginationHelper<ConfigInfoWrapper>();
 
@@ -1946,7 +1945,7 @@ public class PersistService {
 
     public Page<ConfigInfoWrapper> findAllConfigInfoFragment(final long lastMaxId, final int pageSize) {
         String select
-            = "SELECT id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified,type from nacos.config_info where id > ? "
+            = "SELECT id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified,type from config_info where id > ? "
             + "order by id asc offset ? limit ?";
         PaginationHelper<ConfigInfoWrapper> helper = new PaginationHelper<>();
         try {
@@ -1959,12 +1958,12 @@ public class PersistService {
 
     public Page<ConfigInfoBetaWrapper> findAllConfigInfoBetaForDumpAll(
         final int pageNo, final int pageSize) {
-        String sqlCountRows = "SELECT COUNT(*) FROM nacos.config_info_beta";
+        String sqlCountRows = "SELECT COUNT(*) FROM config_info_beta";
         String sqlFetchRows = " SELECT t.id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified,beta_ips "
             + " FROM (                               "
-            + "   SELECT id FROM nacos.config_info_beta         "
+            + "   SELECT id FROM config_info_beta         "
             + "   ORDER BY id LIMIT ?,?             "
-            + " ) g, nacos.config_info_beta t                   "
+            + " ) g, config_info_beta t                   "
             + " WHERE g.id = t.id                    ";
         PaginationHelper<ConfigInfoBetaWrapper> helper = new PaginationHelper<ConfigInfoBetaWrapper>();
         try {
@@ -1979,12 +1978,12 @@ public class PersistService {
 
     public Page<ConfigInfoTagWrapper> findAllConfigInfoTagForDumpAll(
         final int pageNo, final int pageSize) {
-        String sqlCountRows = "SELECT COUNT(*) FROM nacos.config_info_tag";
+        String sqlCountRows = "SELECT COUNT(*) FROM config_info_tag";
         String sqlFetchRows = " SELECT t.id,data_id,group_id,tenant_id,tag_id,app_name,content,md5,gmt_modified "
             + " FROM (                               "
-            + "   SELECT id FROM nacos.config_info_tag         "
+            + "   SELECT id FROM config_info_tag         "
             + "   ORDER BY id LIMIT ?,?             "
-            + " ) g, nacos.config_info_tag t                   "
+            + " ) g, config_info_tag t                   "
             + " WHERE g.id = t.id                    ";
         PaginationHelper<ConfigInfoTagWrapper> helper = new PaginationHelper<ConfigInfoTagWrapper>();
         try {
@@ -2017,7 +2016,7 @@ public class PersistService {
         List<ConfigInfo> result = new ArrayList<ConfigInfo>(dataIds.size());
 
         String sqlStart
-            = "select data_id, group_id, tenant_id, app_name, content from nacos.config_info where group_id = ? and "
+            = "select data_id, group_id, tenant_id, app_name, content from config_info where group_id = ? and "
             + "tenant_id = ? and data_id in (";
         String sqlEnd = ")";
         StringBuilder subQuerySql = new StringBuilder();
@@ -2075,8 +2074,8 @@ public class PersistService {
 
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
 
-        String sqlCountRows = "select count(*) from nacos.config_info where ";
-        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where ";
+        String sqlCountRows = "select count(*) from config_info where ";
+        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,app_name,content from config_info where ";
         String where = " 1=1 ";
         List<String> params = new ArrayList<String>();
 
@@ -2119,16 +2118,16 @@ public class PersistService {
         final String content = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("content");
         final String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
-        String sqlCountRows = "select count(*) from nacos.config_info";
-        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info";
+        String sqlCountRows = "select count(*) from config_info";
+        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,app_name,content from config_info";
         StringBuilder where = new StringBuilder(" where ");
         List<String> params = new ArrayList<String>();
         params.add(generateLikeArgument(tenantTmp));
         if (StringUtils.isNotBlank(configTags)) {
-            sqlCountRows = "select count(*) from nacos.config_info  a left join nacos.config_tags_relation b on a.id=b.id ";
+            sqlCountRows = "select count(*) from config_info  a left join config_tags_relation b on a.id=b.id ";
             sqlFetchRows
-                = "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from nacos.config_info  a left join "
-                + "nacos.config_tags_relation b on a.id=b.id ";
+                = "select a.ID,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content from config_info  a left join "
+                + "config_tags_relation b on a.id=b.id ";
 
             where.append(" a.tenant_id like ? ");
             if (!StringUtils.isBlank(dataId)) {
@@ -2200,8 +2199,8 @@ public class PersistService {
     public Page<ConfigInfo> findConfigInfoLike(final int pageNo,
                                                final int pageSize, final ConfigKey[] configKeys,
                                                final boolean blacklist) {
-        String sqlCountRows = "select count(*) from nacos.config_info where ";
-        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,app_name,content from nacos.config_info where ";
+        String sqlCountRows = "select count(*) from config_info where ";
+        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,app_name,content from config_info where ";
         String where = " 1=1 ";
         // 白名单，请同步条件为空，则没有符合条件的配置
         if (configKeys.length == 0 && blacklist == false) {
@@ -2318,8 +2317,8 @@ public class PersistService {
 
         PaginationHelper<ConfigInfoBase> helper = new PaginationHelper<ConfigInfoBase>();
 
-        String sqlCountRows = "select count(*) from nacos.config_info where ";
-        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,content from nacos.config_info where ";
+        String sqlCountRows = "select count(*) from config_info where ";
+        String sqlFetchRows = "select ID,data_id,group_id,tenant_id,content from config_info where ";
         String where = " 1=1 and tenant_id='' ";
         List<String> params = new ArrayList<String>();
 
@@ -2357,7 +2356,7 @@ public class PersistService {
     public ConfigInfoAggr findSingleConfigInfoAggr(String dataId, String group, String tenant, String datumId) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String sql
-            = "SELECT id,data_id,group_id,tenant_id,datum_id,app_name,content FROM nacos.config_info_aggr WHERE data_id=? "
+            = "SELECT id,data_id,group_id,tenant_id,datum_id,app_name,content FROM config_info_aggr WHERE data_id=? "
             + "AND group_id=? AND tenant_id=? AND datum_id=?";
 
         try {
@@ -2381,7 +2380,7 @@ public class PersistService {
     public List<ConfigInfoAggr> findConfigInfoAggr(String dataId, String group, String tenant) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String sql
-            = "SELECT data_id,group_id,tenant_id,datum_id,app_name,content FROM nacos.config_info_aggr WHERE data_id=? AND "
+            = "SELECT data_id,group_id,tenant_id,datum_id,app_name,content FROM config_info_aggr WHERE data_id=? AND "
             + "group_id=? AND tenant_id=? ORDER BY datum_id";
 
         try {
@@ -2402,9 +2401,9 @@ public class PersistService {
                                                          final int pageSize) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String sqlCountRows
-            = "SELECT COUNT(*) FROM nacos.config_info_aggr WHERE data_id = ? and group_id = ? and tenant_id = ?";
+            = "SELECT COUNT(*) FROM config_info_aggr WHERE data_id = ? and group_id = ? and tenant_id = ?";
         String sqlFetchRows
-            = "select data_id,group_id,tenant_id,datum_id,app_name,content from nacos.config_info_aggr where data_id=? and "
+            = "select data_id,group_id,tenant_id,datum_id,app_name,content from config_info_aggr where data_id=? and "
             + "group_id=? and tenant_id=? order by datum_id limit ?,?";
         PaginationHelper<ConfigInfoAggr> helper = new PaginationHelper<ConfigInfoAggr>();
         try {
@@ -2430,9 +2429,9 @@ public class PersistService {
     public Page<ConfigInfoAggr> findConfigInfoAggrLike(final int pageNo, final int pageSize, ConfigKey[] configKeys,
                                                        boolean blacklist) {
 
-        String sqlCountRows = "select count(*) from nacos.config_info_aggr where ";
+        String sqlCountRows = "select count(*) from config_info_aggr where ";
         String sqlFetchRows
-            = "select data_id,group_id,tenant_id,datum_id,app_name,content from nacos.config_info_aggr where ";
+            = "select data_id,group_id,tenant_id,datum_id,app_name,content from config_info_aggr where ";
         String where = " 1=1 ";
         // 白名单，请同步条件为空，则没有符合条件的配置
         if (configKeys.length == 0 && blacklist == false) {
@@ -2534,7 +2533,7 @@ public class PersistService {
      * 找到所有聚合数据组。
      */
     public List<ConfigInfoChanged> findAllAggrGroup() {
-        String sql = "SELECT DISTINCT data_id, group_id, tenant_id FROM nacos.config_info_aggr";
+        String sql = "SELECT DISTINCT data_id, group_id, tenant_id FROM config_info_aggr";
 
         try {
             return this.jdbcTemplate.query(sql, new Object[]{},
@@ -2560,7 +2559,7 @@ public class PersistService {
      */
     public List<String> findDatumIdByContent(String dataId, String groupId,
                                              String content) {
-        String sql = "SELECT datum_id FROM nacos.config_info_aggr WHERE data_id = ? AND group_id = ? AND content = ? ";
+        String sql = "SELECT datum_id FROM config_info_aggr WHERE data_id = ? AND group_id = ? AND content = ? ";
 
         try {
             return this.jdbcTemplate.queryForList(sql, new Object[]{dataId, groupId,
@@ -2580,7 +2579,7 @@ public class PersistService {
         try {
             List<Map<String, Object>> list = jdbcTemplate
                 .queryForList(
-                    "SELECT data_id, group_id, tenant_id, app_name, content, gmt_modified FROM nacos.config_info WHERE "
+                    "SELECT data_id, group_id, tenant_id, app_name, content, gmt_modified FROM config_info WHERE "
                         + "gmt_modified >=? AND gmt_modified <= ?",
                         startTime, endTime);
             return convertChangeConfig(list);
@@ -2607,9 +2606,9 @@ public class PersistService {
                                                     final Timestamp endTime, final int pageNo,
                                                     final int pageSize, final long lastMaxId) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
-        String sqlCountRows = "select count(*) from nacos.config_info where ";
+        String sqlCountRows = "select count(*) from config_info where ";
         String sqlFetchRows
-            = "select id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified from nacos.config_info where ";
+            = "select id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified from config_info where ";
         String where = " 1=1 ";
         List<Object> params = new ArrayList<Object>();
 
@@ -2655,7 +2654,7 @@ public class PersistService {
         try {
             List<Map<String, Object>> list = jdbcTemplate
                 .queryForList(
-                    "SELECT DISTINCT data_id, group_id, tenant_id FROM nacos.his_config_info WHERE op_type = 'D' AND "
+                    "SELECT DISTINCT data_id, group_id, tenant_id FROM his_config_info WHERE op_type = 'D' AND "
                         + "gmt_modified >=? AND gmt_modified <= ?",
                         startTime, endTime);
             return convertDeletedConfig(list);
@@ -2694,7 +2693,7 @@ public class PersistService {
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         final String sql
-            = "INSERT INTO nacos.config_info(data_id,group_id,tenant_id,app_name,content,md5,src_ip,src_user,gmt_create,"
+            = "INSERT INTO config_info(data_id,group_id,tenant_id,app_name,content,md5,src_ip,src_user,gmt_create,"
             + "gmt_modified,c_desc,c_use,effect,type,c_schema) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
@@ -2722,7 +2721,7 @@ public class PersistService {
             }, keyHolder);
             Number nu = keyHolder.getKey();
             if (nu == null) {
-                throw new IllegalArgumentException("insert nacos.config_info fail");
+                throw new IllegalArgumentException("insert config_info fail");
             }
             return nu.longValue();
         } catch (CannotGetJdbcConnectionException e) {
@@ -2743,7 +2742,7 @@ public class PersistService {
     public void addConfiTagRelationAtomic(long configId, String tagName, String dataId, String group, String tenant) {
         try {
             jdbcTemplate.update(
-                "INSERT INTO nacos.config_tags_relation(id,tag_name,tag_type,data_id,group_id,tenant_id) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO config_tags_relation(id,tag_name,tag_type,data_id,group_id,tenant_id) VALUES(?,?,?,?,?,?)",
                 configId, tagName, null, dataId, group, tenant);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -2772,7 +2771,7 @@ public class PersistService {
 
     public void removeTagByIdAtomic(long id) {
         try {
-            jdbcTemplate.update("DELETE FROM nacos.config_tags_relation WHERE id=?", id);
+            jdbcTemplate.update("DELETE FROM config_tags_relation WHERE id=?", id);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
             throw e;
@@ -2780,7 +2779,7 @@ public class PersistService {
     }
 
     public List<String> getConfigTagsByTenant(String tenant) {
-        String sql = "SELECT tag_name FROM nacos.config_tags_relation WHERE tenant_id = ? ";
+        String sql = "SELECT tag_name FROM config_tags_relation WHERE tenant_id = ? ";
         try {
             return jdbcTemplate.queryForList(sql, new Object[]{tenant}, String.class);
         } catch (EmptyResultDataAccessException e) {
@@ -2794,7 +2793,7 @@ public class PersistService {
     }
 
     public List<String> selectTagByConfig(String dataId, String group, String tenant) {
-        String sql = "SELECT tag_name FROM nacos.config_tags_relation WHERE data_id=? AND group_id=? AND tenant_id = ? ";
+        String sql = "SELECT tag_name FROM config_tags_relation WHERE data_id=? AND group_id=? AND tenant_id = ? ";
         try {
             return jdbcTemplate.queryForList(sql, new Object[]{dataId, group, tenant}, String.class);
         } catch (EmptyResultDataAccessException e) {
@@ -2821,7 +2820,7 @@ public class PersistService {
                                         final String srcUser) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         try {
-            jdbcTemplate.update("DELETE FROM nacos.config_info WHERE data_id=? AND group_id=? AND tenant_id=?", dataId, group,
+            jdbcTemplate.update("DELETE FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?", dataId, group,
                 tenantTmp);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -2876,7 +2875,7 @@ public class PersistService {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String tagTmp = StringUtils.isBlank(tag) ? StringUtils.EMPTY : tag;
         try {
-            jdbcTemplate.update("DELETE FROM nacos.config_info_tag WHERE data_id=? AND group_id=? AND tenant_id=? AND tag_id=?", dataId,
+            jdbcTemplate.update("DELETE FROM config_info_tag WHERE data_id=? AND group_id=? AND tenant_id=? AND tag_id=?", dataId,
                 group,
                 tenantTmp, tagTmp);
         } catch (CannotGetJdbcConnectionException e) {
@@ -2907,7 +2906,7 @@ public class PersistService {
 
         try {
             jdbcTemplate.update(
-                "UPDATE nacos.config_info SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=?,c_desc=?,c_use=?,effect=?,type=?,c_schema=? WHERE data_id=? AND group_id=? AND tenant_id=?",
+                "UPDATE config_info SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=?,c_desc=?,c_use=?,effect=?,type=?,c_schema=? WHERE data_id=? AND group_id=? AND tenant_id=?",
                 configInfo.getContent(), md5Tmp, srcIp, srcUser, time, appNameTmp, desc, use, effect, type, schema,
                 configInfo.getDataId(), configInfo.getGroup(), tenantTmp);
         } catch (CannotGetJdbcConnectionException e) {
@@ -2928,7 +2927,7 @@ public class PersistService {
         final String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         try {
             return this.jdbcTemplate.queryForObject(
-                "SELECT ID,data_id,group_id,tenant_id,app_name,content,md5,type FROM nacos.config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
+                "SELECT ID,data_id,group_id,tenant_id,app_name,content,md5,type FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
                 new Object[] {dataId, group, tenantTmp}, CONFIG_INFO_ROW_MAPPER);
         } catch (EmptyResultDataAccessException e) { // 表明数据不存在, 返回null
             return null;
@@ -2984,7 +2983,7 @@ public class PersistService {
         try {
             List<String> configTagList = this.selectTagByConfig(dataId, group, tenant);
             ConfigAdvanceInfo configAdvance = this.jdbcTemplate.queryForObject(
-                "SELECT gmt_create,gmt_modified,src_user,src_ip,c_desc,c_use,effect,type,c_schema FROM nacos.config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
+                "SELECT gmt_create,gmt_modified,src_user,src_ip,c_desc,c_use,effect,type,c_schema FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
                 new Object[]{dataId, group, tenantTmp}, CONFIG_ADVANCE_INFO_ROW_MAPPER);
             if (configTagList != null && !configTagList.isEmpty()) {
                 StringBuilder configTagsTmp = new StringBuilder();
@@ -3019,7 +3018,7 @@ public class PersistService {
         try {
             List<String> configTagList = this.selectTagByConfig(dataId, group, tenant);
             ConfigAllInfo configAdvance = this.jdbcTemplate.queryForObject(
-                "SELECT ID,data_id,group_id,tenant_id,app_name,content,md5,gmt_create,gmt_modified,src_user,src_ip,c_desc,c_use,effect,type,c_schema FROM nacos.config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
+                "SELECT ID,data_id,group_id,tenant_id,app_name,content,md5,gmt_create,gmt_modified,src_user,src_ip,c_desc,c_use,effect,type,c_schema FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
                 new Object[]{dataId, group, tenantTmp}, CONFIG_ALL_INFO_ROW_MAPPER);
             if (configTagList != null && !configTagList.isEmpty()) {
                 StringBuilder configTagsTmp = new StringBuilder();
@@ -3058,7 +3057,7 @@ public class PersistService {
         final String md5Tmp = MD5.getInstance().getMD5String(configInfo.getContent());
         try {
             jdbcTemplate.update(
-                "INSERT INTO nacos.his_config_info (id,data_id,group_id,tenant_id,app_name,content,md5,src_ip,src_user,gmt_modified,op_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO his_config_info (id,data_id,group_id,tenant_id,app_name,content,md5,src_ip,src_user,gmt_modified,op_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                 id, configInfo.getDataId(), configInfo.getGroup(), tenantTmp, appNameTmp, configInfo.getContent(),
                 md5Tmp, srcIp, srcUser, time, ops);
         } catch (DataAccessException e) {
@@ -3082,9 +3081,9 @@ public class PersistService {
         PaginationHelper<ConfigHistoryInfo> helper = new PaginationHelper<ConfigHistoryInfo>();
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String sqlCountRows
-            = "select count(*) from nacos.his_config_info where data_id like ? and group_id like ? and tenant_id = ?";
+            = "select count(*) from his_config_info where data_id like ? and group_id like ? and tenant_id = ?";
         String sqlFetchRows
-            = "select nid,data_id,group_id,tenant_id,app_name,src_ip,op_type,gmt_create,gmt_modified from nacos.his_config_info " +
+            = "select nid,data_id,group_id,tenant_id,app_name,src_ip,op_type,gmt_create,gmt_modified from his_config_info " +
                 "where data_id like ? and group_id like ? and tenant_id = ? order by nid desc";
 
         Page<ConfigHistoryInfo> page = null;
@@ -3115,7 +3114,7 @@ public class PersistService {
         final String appNameTmp = appName == null ? "" : appName;
         try {
             jdbcTemplate.update(
-                "INSERT INTO nacos.app_configdata_relation_subs(data_id,group_id,app_name,gmt_modified) VALUES(?,?,?,?)",
+                "INSERT INTO app_configdata_relation_subs(data_id,group_id,app_name,gmt_modified) VALUES(?,?,?,?)",
                 dataId, group, appNameTmp, date);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -3136,7 +3135,7 @@ public class PersistService {
         final String appNameTmp = appName == null ? "" : appName;
         try {
             jdbcTemplate.update(
-                "UPDATE nacos.app_configdata_relation_subs SET gmt_modified=? WHERE data_id=? AND group_id=? AND app_name=?",
+                "UPDATE app_configdata_relation_subs SET gmt_modified=? WHERE data_id=? AND group_id=? AND app_name=?",
                 time, dataId, group, appNameTmp);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -3146,7 +3145,7 @@ public class PersistService {
 
     public ConfigHistoryInfo detailConfigHistory(Long nid) {
         String sqlFetchRows
-            = "SELECT nid,data_id,group_id,tenant_id,app_name,content,md5,src_user,src_ip,op_type,gmt_create,gmt_modified FROM nacos.his_config_info WHERE nid = ?";
+            = "SELECT nid,data_id,group_id,tenant_id,app_name,content,md5,src_user,src_ip,op_type,gmt_create,gmt_modified FROM his_config_info WHERE nid = ?";
         try {
             ConfigHistoryInfo historyInfo = jdbcTemplate.queryForObject(sqlFetchRows, new Object[]{nid},
                 HISTORY_DETAIL_ROW_MAPPER);
@@ -3170,7 +3169,7 @@ public class PersistService {
                                        String createResoure, final long time) {
         try {
             jdbcTemplate.update(
-                "INSERT INTO nacos.tenant_info(kp,tenant_id,tenant_name,tenant_desc,create_source,gmt_create,gmt_modified) VALUES(?,?,?,?,?,?,?)",
+                "INSERT INTO tenant_info(kp,tenant_id,tenant_name,tenant_desc,create_source,gmt_create,gmt_modified) VALUES(?,?,?,?,?,?,?)",
                 kp, tenantId, tenantName, tenantDesc, createResoure, time, time);
         } catch (DataAccessException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -3189,7 +3188,7 @@ public class PersistService {
     public void updateTenantNameAtomic(String kp, String tenantId, String tenantName, String tenantDesc) {
         try {
             jdbcTemplate.update(
-                "UPDATE nacos.tenant_info SET tenant_name = ?, tenant_desc = ?, gmt_modified= ? WHERE kp=? AND tenant_id=?",
+                "UPDATE tenant_info SET tenant_name = ?, tenant_desc = ?, gmt_modified= ? WHERE kp=? AND tenant_id=?",
                 tenantName, tenantDesc, System.currentTimeMillis(), kp, tenantId);
         } catch (DataAccessException e) {
             log.error("[db-error] " + e.toString(), e);
@@ -3198,7 +3197,7 @@ public class PersistService {
     }
 
     public List<TenantInfo> findTenantByKp(String kp) {
-        String sql = "SELECT tenant_id,tenant_name,tenant_desc FROM nacos.tenant_info WHERE kp=?";
+        String sql = "SELECT tenant_id,tenant_name,tenant_desc FROM tenant_info WHERE kp=?";
         try {
             return this.jdbcTemplate.query(sql, new Object[]{kp}, TENANT_INFO_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -3213,7 +3212,7 @@ public class PersistService {
     }
 
     public TenantInfo findTenantByKp(String kp, String tenantId) {
-        String sql = "SELECT tenant_id,tenant_name,tenant_desc FROM nacos.tenant_info WHERE kp=? AND tenant_id=?";
+        String sql = "SELECT tenant_id,tenant_name,tenant_desc FROM tenant_info WHERE kp=? AND tenant_id=?";
         try {
             return this.jdbcTemplate.queryForObject(sql, new Object[]{kp, tenantId}, TENANT_INFO_ROW_MAPPER);
         } catch (CannotGetJdbcConnectionException e) {
@@ -3229,7 +3228,7 @@ public class PersistService {
 
     public void removeTenantInfoAtomic(final String kp, final String tenantId) {
         try {
-            jdbcTemplate.update("DELETE FROM nacos.tenant_info WHERE kp=? AND tenant_id=?", kp, tenantId);
+            jdbcTemplate.update("DELETE FROM tenant_info WHERE kp=? AND tenant_id=?", kp, tenantId);
         } catch (CannotGetJdbcConnectionException e) {
             log.error("[db-error] " + e.toString(), e);
             throw e;
@@ -3289,9 +3288,9 @@ public class PersistService {
     }
 
     private List<ConfigInfoWrapper> listGroupKeyMd5ByPage(int pageNo, int pageSize) {
-        String sqlCountRows = " SELECT COUNT(*) FROM nacos.config_info ";
+        String sqlCountRows = " SELECT COUNT(*) FROM config_info ";
         String sqlFetchRows
-            = " SELECT t.id,data_id,group_id,tenant_id,app_name,md5,gmt_modified FROM ( SELECT id FROM nacos.config_info ORDER BY id LIMIT ?,?  ) g, nacos.config_info t WHERE g.id = t.id";
+            = " SELECT t.id,data_id,group_id,tenant_id,app_name,md5,gmt_modified FROM ( SELECT id FROM config_info ORDER BY id LIMIT ?,?  ) g, config_info t WHERE g.id = t.id";
         PaginationHelper<ConfigInfoWrapper> helper = new PaginationHelper<ConfigInfoWrapper>();
         try {
             Page<ConfigInfoWrapper> page = helper.fetchPageLimit(jdbcTemplate, sqlCountRows, sqlFetchRows, new Object[]{
@@ -3319,7 +3318,7 @@ public class PersistService {
         try {
             return this.jdbcTemplate
                 .queryForObject(
-                    "SELECT ID,data_id,group_id,tenant_id,app_name,content,gmt_modified,md5 FROM nacos.config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
+                    "SELECT ID,data_id,group_id,tenant_id,app_name,content,gmt_modified,md5 FROM config_info WHERE data_id=? AND group_id=? AND tenant_id=?",
                     new Object[]{dataId, group, tenantTmp}, CONFIG_INFO_WRAPPER_ROW_MAPPER);
         } catch (EmptyResultDataAccessException e) {
             return null;

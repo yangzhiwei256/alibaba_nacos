@@ -44,9 +44,9 @@ public class RolePersistService extends PersistService {
 
         PaginationHelper<RoleInfo> helper = new PaginationHelper<>();
 
-        String sqlCountRows = "select count(*) from (select distinct role from nacos.roles) nacos.roles where ";
+        String sqlCountRows = "select count(*) from (select distinct role from roles) roles where ";
         String sqlFetchRows
-            = "select role,username from nacos.roles where ";
+            = "select role,username from roles where ";
 
         String where = " 1=1 ";
 
@@ -70,9 +70,9 @@ public class RolePersistService extends PersistService {
 
         PaginationHelper<RoleInfo> helper = new PaginationHelper<>();
 
-        String sqlCountRows = "select count(*) from nacos.roles where ";
+        String sqlCountRows = "select count(*) from roles where ";
         String sqlFetchRows
-            = "select role,username from nacos.roles where ";
+            = "select role,username from roles where ";
 
         String where = " username='" + username + "' ";
 
@@ -92,7 +92,7 @@ public class RolePersistService extends PersistService {
 
     public void addRole(String role, String userName) {
 
-        String sql = "INSERT into nacos.roles (role, username) VALUES (?, ?)";
+        String sql = "INSERT into roles (role, username) VALUES (?, ?)";
 
         try {
             jdbcTemplate.update(sql, role, userName);
@@ -103,7 +103,7 @@ public class RolePersistService extends PersistService {
     }
 
     public void deleteRole(String role) {
-        String sql = "DELETE from nacos.roles WHERE role=?";
+        String sql = "DELETE from roles WHERE role=?";
         try {
             jdbcTemplate.update(sql, role);
         } catch (CannotGetJdbcConnectionException e) {
@@ -113,7 +113,7 @@ public class RolePersistService extends PersistService {
     }
 
     public void deleteRole(String role, String username) {
-        String sql = "DELETE from nacos.roles WHERE role=? and username=?";
+        String sql = "DELETE from roles WHERE role=? and username=?";
         try {
             jdbcTemplate.update(sql, role, username);
         } catch (CannotGetJdbcConnectionException e) {

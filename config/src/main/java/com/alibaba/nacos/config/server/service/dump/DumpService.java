@@ -80,8 +80,8 @@ public class DumpService {
     static final int INIT_THREAD_COUNT = 10;
     int total = 0;
     private final static String TRUE_STR = "true";
-    private final static String BETA_TABLE_NAME = "nacos.config_info_beta";
-    private final static String TAG_TABLE_NAME = "nacos.config_info_tag";
+    private final static String BETA_TABLE_NAME = "config_info_beta";
+    private final static String TAG_TABLE_NAME = "config_info_tag";
 
     Boolean isQuickStart = false;
 
