@@ -3082,13 +3082,17 @@ public class PersistService {
         PaginationHelper<ConfigHistoryInfo> helper = new PaginationHelper<ConfigHistoryInfo>();
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
         String sqlCountRows
-            = "select count(*) from nacos.his_config_info where data_id = ? and group_id = ? and tenant_id = ?";
+            = "select count(*) from nacos.his_config_info where data_id like ? and group_id like ? and tenant_id = ?";
         String sqlFetchRows
-            = "select nid,data_id,group_id,tenant_id,app_name,src_ip,op_type,gmt_create,gmt_modified from nacos.his_config_info where data_id = ? and group_id = ? and tenant_id = ? order by nid desc";
+            = "select nid,data_id,group_id,tenant_id,app_name,src_ip,op_type,gmt_create,gmt_modified from nacos.his_config_info " +
+                "where data_id like ? and group_id like ? and tenant_id = ? order by nid desc";
 
         Page<ConfigHistoryInfo> page = null;
         try {
-            page = helper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlFetchRows, new Object[]{dataId, group, tenantTmp},
+            page = helper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlFetchRows, new Object[]{
+                            "%".concat(dataId).concat("%"),
+                            "%".concat(group).concat("%"),
+                            tenantTmp},
                 pageNo,
                 pageSize, HISTORY_LIST_ROW_MAPPER);
         } catch (DataAccessException e) {
