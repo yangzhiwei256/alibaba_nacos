@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class SecurityProxy {
 
-    private static final String LOGIN_URL = "/v1/auth/nacos.users/login";
+    private static final String LOGIN_URL = "/v1/auth/users/login";
 
     private final String contextPath;
 
