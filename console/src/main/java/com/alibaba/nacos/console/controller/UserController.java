@@ -48,7 +48,7 @@ import java.util.List;
  * @author nkorange
  */
 @RestController("user")
-@RequestMapping({"/v1/auth","/v1/auth/users", "/v1/auth/nacos.users"})
+@RequestMapping({"/v1/auth","/v1/auth/users"})
 public class UserController {
 
     @Autowired
