@@ -115,7 +115,7 @@ public class ClientBeatCheckTask implements Runnable {
                     continue;
                 }
 
-                //具体最后1次心跳超时30s,剔除服务实例
+                //距离最后1次心跳超时30s,剔除服务实例
                 if (System.currentTimeMillis() - instance.getLastBeat() > instance.getIpDeleteTimeout()) {
                     // delete instance
                     log.info("[AUTO-DELETE-IP] service: {}, ip: {}", service.getName(), JSON.toJSONString(instance));
@@ -129,7 +129,10 @@ public class ClientBeatCheckTask implements Runnable {
 
     }
 
-
+    /**
+     * 剔除服务实例
+     * @param instance
+     */
     private void deleteIP(Instance instance) {
 
         try {
