@@ -38,7 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -93,13 +93,13 @@ public class NacosConfigService implements ConfigService {
     @Override
     public String getConfigAndSignListener(String dataId, String group, long timeoutMs, Listener listener) throws NacosException {
         String content = getConfig(dataId, group, timeoutMs);
-        worker.addTenantListenersWithContent(dataId, group, content, Arrays.asList(listener));
+        worker.addTenantListenersWithContent(dataId, group, content, Collections.singletonList(listener));
         return content;
     }
 
     @Override
     public void addListener(String dataId, String group, Listener listener) throws NacosException {
-        worker.addTenantListeners(dataId, group, Arrays.asList(listener));
+        worker.addTenantListeners(dataId, group, Collections.singletonList(listener));
     }
 
     @Override
@@ -129,8 +129,7 @@ public class NacosConfigService implements ConfigService {
         // 优先使用本地配置
         String content = LocalConfigInfoProcessor.getFailover(agent.getName(), dataId, group, tenant);
         if (content != null) {
-            log.warn("[{}] [get-config] get failover ok, dataId={}, group={}, tenant={}, config={}", agent.getName(),
-                dataId, group, tenant, ContentUtils.truncateContent(content));
+            log.warn("[{}] [get-config] get local failover ok, dataId={}, group={}, tenant={}, config={}", agent.getName(), dataId, group, tenant, ContentUtils.truncateContent(content));
             cr.setContent(content);
             configFilterChainManager.doFilter(null, cr);
             content = cr.getContent();

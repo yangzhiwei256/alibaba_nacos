@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 
 /**
+ * nacos属性源配置器
  * @author xiaojing
  * @author pbting
  */
@@ -62,31 +63,30 @@ public class NacosPropertySourceBuilder {
 	 * @param dataId Nacos dataId
 	 * @param group Nacos group
 	 */
-	NacosPropertySource build(String dataId, String group, String fileExtension,
-			boolean isRefreshable) {
-		Properties p = loadNacosData(dataId, group, fileExtension);
-		NacosPropertySource nacosPropertySource = new NacosPropertySource(group, dataId,
-				propertiesToMap(p), new Date(), isRefreshable);
+	NacosPropertySource build(String dataId, String group, String fileExtension, boolean isRefreshable) {
+		Properties properties = loadNacosData(dataId, group, fileExtension);
+		NacosPropertySource nacosPropertySource = new NacosPropertySource(group, dataId, propertiesToMap(properties), new Date(), isRefreshable);
 		NacosPropertySourceRepository.collectNacosPropertySources(nacosPropertySource);
 		return nacosPropertySource;
 	}
 
+    /**
+     * 获取nacos配置中心属性
+     * @param dataId 数据ID
+     * @param group 组名
+     * @param fileExtension 文件扩展
+     * @return
+     */
 	private Properties loadNacosData(String dataId, String group, String fileExtension) {
 		String data = null;
 		try {
 			data = configService.getConfig(dataId, group, timeout);
 			if (StringUtils.isEmpty(data)) {
-				log.warn(
-						"Ignore the empty nacos configuration and get it based on dataId[{}] & group[{}]",
-						dataId, group);
+				log.warn("Ignore the empty nacos configuration and get it based on dataId[{}] & group[{}]",dataId, group);
 				return EMPTY_PROPERTIES;
 			}
-			log.info(String.format(
-					"Loading nacos data, dataId: '%s', group: '%s', data: %s", dataId,
-					group, data));
-
-			Properties properties = NacosDataParserHandler.getInstance()
-					.parseNacosData(data, fileExtension);
+			log.info(String.format("Loading nacos data, dataId: '%s', group: '%s', data: %s", dataId, group, data));
+			Properties properties = NacosDataParserHandler.getInstance().parseNacosData(data, fileExtension);
 			return properties == null ? EMPTY_PROPERTIES : properties;
 		}
 		catch (NacosException e) {

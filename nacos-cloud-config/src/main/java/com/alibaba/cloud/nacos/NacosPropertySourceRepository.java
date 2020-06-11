@@ -37,14 +37,11 @@ public class NacosPropertySourceRepository {
 		return Lists.newArrayList(NACOS_PROPERTY_SOURCE_REPOSITORY.values());
 	}
 
-	public static void collectNacosPropertySources(
-			NacosPropertySource nacosPropertySource) {
-		NACOS_PROPERTY_SOURCE_REPOSITORY.putIfAbsent(nacosPropertySource.getDataId(),
-				nacosPropertySource);
+	public static void collectNacosPropertySources(NacosPropertySource nacosPropertySource) {
+		NACOS_PROPERTY_SOURCE_REPOSITORY.putIfAbsent(nacosPropertySource.getDataId(), nacosPropertySource);
 	}
 
 	public static NacosPropertySource getNacosPropertySource(String dataId) {
-
 		return NACOS_PROPERTY_SOURCE_REPOSITORY.get(dataId);
 	}
 }

@@ -1,12 +1,14 @@
 package com.alibaba.nacos;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * function:
+ * function: nacos配置测试控制器
  * author: zhiwei_yang
  * time: 2020/3/20-21:36
  */
@@ -14,27 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RefreshScope
 public class NacosController {
 
-    @Value("${application.environment:default}")
-    private String environment;
-
-    @Value("${common.description:default}")
-    private String common;
+    @Autowired
+    private Environment environment;
 
     /**
-     * 私有配置
+     * 获取nacos配置
      * @return
      */
-    @GetMapping("/config")
-    public String getEnvironment(){
-        return environment;
-    }
-
-    /**
-     * 公共配置
-     * @return
-     */
-    @GetMapping("/common")
-    public String getcommon(){
-        return common;
+    @GetMapping("/env/{env}")
+    public String getEnvironment(@PathVariable("env") String env){
+        return environment.getProperty(env, String.class);
     }
 }

@@ -162,10 +162,9 @@ public class NacosConfigProperties {
 	private String name;
 
 	/**
-	 * the dataids for configurable multiple shared configurations , multiple separated by
-	 * commas .
+	 * the dataids for configurable multiple shared configurations , multiple separated by commas .
 	 */
-	private String sharedDataids;
+	private String sharedDataIds;
 
 	/**
 	 * refreshable dataids , multiple separated by commas .
@@ -331,12 +330,12 @@ public class NacosConfigProperties {
 		return name;
 	}
 
-	public String getSharedDataids() {
-		return sharedDataids;
+	public String getSharedDataIds() {
+		return sharedDataIds;
 	}
 
-	public void setSharedDataids(String sharedDataids) {
-		this.sharedDataids = sharedDataids;
+	public void setSharedDataIds(String sharedDataIds) {
+		this.sharedDataIds = sharedDataIds;
 	}
 
 	public String getRefreshableDataids() {
@@ -417,7 +416,7 @@ public class NacosConfigProperties {
 				+ ", namespace='" + namespace + '\'' + ", accessKey='" + accessKey + '\''
 				+ ", secretKey='" + secretKey + '\'' + ", contextPath='" + contextPath
 				+ '\'' + ", clusterName='" + clusterName + '\'' + ", name='" + name + '\''
-				+ ", sharedDataids='" + sharedDataids + '\'' + ", refreshableDataids='"
+				+ ", sharedDataids='" + sharedDataIds + '\'' + ", refreshableDataids='"
 				+ refreshableDataids + '\'' + ", extConfig=" + extConfig + '}';
 	}
 
