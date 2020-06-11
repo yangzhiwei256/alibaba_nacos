@@ -26,9 +26,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 
 /**
+ * nacos客户端推/拉数据线程
  * @author xuanyin
  */
 @Slf4j
@@ -36,6 +36,7 @@ public class PushReceiver implements Runnable {
 
     private ScheduledExecutorService executorService;
 
+    /** UDP缓冲区大小 **/
     private static final int UDP_MSS = 64 * 1024;
 
     private DatagramSocket udpSocket;
@@ -47,14 +48,11 @@ public class PushReceiver implements Runnable {
             this.hostReactor = hostReactor;
             udpSocket = new DatagramSocket();
 
-            executorService = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r);
-                    thread.setDaemon(true);
-                    thread.setName("com.alibaba.nacos.naming.push.receiver");
-                    return thread;
-                }
+            executorService = new ScheduledThreadPoolExecutor(1, r -> {
+                Thread thread = new Thread(r);
+                thread.setDaemon(true);
+                thread.setName("com.alibaba.nacos.naming.push.receiver");
+                return thread;
             });
 
             executorService.execute(this);
@@ -107,7 +105,7 @@ public class PushReceiver implements Runnable {
         }
     }
 
-    public static class PushPacket {
+    private static class PushPacket {
         public String type;
         public long lastRefTime;
         public String data;

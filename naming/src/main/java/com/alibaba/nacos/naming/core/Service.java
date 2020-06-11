@@ -55,6 +55,9 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
 
     private static final String SERVICE_NAME_SYNTAX = "[0-9a-zA-Z@\\.:_-]+";
 
+    /**
+     * 服务端心跳检测任务
+     */
     @JSONField(serialize = false)
     private final ClientBeatCheckTask clientBeatCheckTask = new ClientBeatCheckTask(this);
 
@@ -251,16 +254,21 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
 
     }
 
+    /**
+     * 服务实例初始化，开启服务端堆客户端心跳检测
+     */
     public void init() {
-
         HealthCheckReactor.scheduleCheck(clientBeatCheckTask);
-
         for (Map.Entry<String, Cluster> entry : clusterMap.entrySet()) {
             entry.getValue().setService(this);
             entry.getValue().init();
         }
     }
 
+    /**
+     * 服务清除： 取消服务端心跳检测任务
+     * @throws Exception
+     */
     public void destroy() throws Exception {
         for (Map.Entry<String, Cluster> entry : clusterMap.entrySet()) {
             entry.getValue().destroy();

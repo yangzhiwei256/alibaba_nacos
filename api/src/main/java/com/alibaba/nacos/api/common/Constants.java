@@ -157,18 +157,25 @@ public class Constants {
 
     public static final String DEFAULT_CLUSTER_NAME = "DEFAULT";
 
+    /**
+     * 默认服务端心跳检测超时
+     */
     public static final long DEFAULT_HEART_BEAT_TIMEOUT = TimeUnit.SECONDS.toMillis(15);
 
     public static final long DEFAULT_IP_DELETE_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
+    /** 心跳检测间隔 **/
     public static final long DEFAULT_HEART_BEAT_INTERVAL = TimeUnit.SECONDS.toMillis(5);
 
+    /** 默认命名空间名称 **/
     public static final String DEFAULT_NAMESPACE_ID = "public";
 
     public static final boolean DEFAULT_USE_CLOUD_NAMESPACE_PARSING = true;
 
+    /** http重定向状态码 **/
     public static final int WRITE_REDIRECT_CODE = 307;
 
+    /** 服务信息分隔符 **/
     public static final String SERVICE_INFO_SPLITER = "@@";
 
     public static final String NULL_STRING = "null";

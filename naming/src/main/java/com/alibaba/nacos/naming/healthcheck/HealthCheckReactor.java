@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /**
+ * 服务健康检查反应器
  * @author nacos
  */
 @Slf4j
@@ -53,10 +54,18 @@ public class HealthCheckReactor {
         return EXECUTOR.schedule(task, task.getCheckRTNormalized(), TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 服务健康心跳检测
+     * @param task
+     */
     public static void scheduleCheck(ClientBeatCheckTask task) {
         futureMap.putIfAbsent(task.taskKey(), EXECUTOR.scheduleWithFixedDelay(task, 5000, 5000, TimeUnit.MILLISECONDS));
     }
 
+    /**
+     * 取消服务健康心跳检测
+     * @param task
+     */
     public static void cancelCheck(ClientBeatCheckTask task) {
         ScheduledFuture scheduledFuture = futureMap.get(task.taskKey());
         if (scheduledFuture == null) {

@@ -35,6 +35,10 @@ public class AppNameUtils {
     private static final String SERVER_TOMCAT = "tomcat";
     private static final String SERVER_UNKNOWN = "unknown server";
 
+    /**
+     * 获取应用名称
+     * @return
+     */
     public static String getAppName() {
         String appName = null;
 

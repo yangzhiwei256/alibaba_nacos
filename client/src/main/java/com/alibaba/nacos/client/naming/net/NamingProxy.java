@@ -102,6 +102,9 @@ public class NamingProxy {
         initRefreshTask();
     }
 
+    /**
+     * 初始化刷新服务列表任务，并模拟登陆获取Token
+     */
     private void initRefreshTask() {
 
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(2, new ThreadFactory() {
@@ -193,8 +196,7 @@ public class NamingProxy {
 
     public void registerService(String serviceName, String groupName, Instance instance) throws NacosException {
 
-        log.info("[REGISTER-SERVICE] {} registering service {} with instance: {}",
-            namespaceId, serviceName, instance);
+        log.info("[REGISTER-SERVICE] {} registering service {} with instance: {}", namespaceId, serviceName, instance);
 
         final Map<String, String> params = new HashMap<String, String>(9);
         params.put(CommonParams.NAMESPACE_ID, namespaceId);
@@ -208,9 +210,7 @@ public class NamingProxy {
         params.put("healthy", String.valueOf(instance.isHealthy()));
         params.put("ephemeral", String.valueOf(instance.isEphemeral()));
         params.put("metadata", JSON.toJSONString(instance.getMetadata()));
-
         reqAPI(UtilAndComs.NACOS_URL_INSTANCE, params, HttpMethod.POST);
-
     }
 
     public void deregisterService(String serviceName, Instance instance) throws NacosException {
@@ -321,10 +321,17 @@ public class NamingProxy {
         return reqAPI(UtilAndComs.NACOS_URL_BASE + "/instance/list", params, HttpMethod.GET);
     }
 
+    /**
+     * 发送客户端服务心跳
+     * @param beatInfo 服务心跳信息
+     * @param lightBeatEnabled
+     * @return
+     * @throws NacosException
+     */
     public JSONObject sendBeat(BeatInfo beatInfo, boolean lightBeatEnabled) throws NacosException {
 
         if (log.isDebugEnabled()) {
-            log.debug("[BEAT] {} sending beat to server: {}", namespaceId, beatInfo.toString());
+            log.debug("[BEAT] {} sending heart beat to server: {}", namespaceId, beatInfo.toString());
         }
         Map<String, String> params = new HashMap<String, String>(8);
         String body = StringUtils.EMPTY;
@@ -379,7 +386,6 @@ public class NamingProxy {
         }
 
         String result = reqAPI(UtilAndComs.NACOS_URL_BASE + "/service/list", params, HttpMethod.GET);
-
         JSONObject json = JSON.parseObject(result);
         ListView<String> listView = new ListView<String>();
         listView.setCount(json.getInteger("count"));
@@ -409,6 +415,16 @@ public class NamingProxy {
         return callServer(api, params, body, curServer, HttpMethod.GET);
     }
 
+    /**
+     * 调用远程Nacos服务
+     * @param api nacos服务URI
+     * @param params 请求参数
+     * @param body 请求体
+     * @param curServer nacos服务器地址
+     * @param method http方法
+     * @return
+     * @throws NacosException
+     */
     public String callServer(String api, Map<String, String> params, String body, String curServer, String method)
         throws NacosException {
         long start = System.currentTimeMillis();
@@ -443,21 +459,18 @@ public class NamingProxy {
         throw new NacosException(result.code, result.content);
     }
 
+    /** nacos服务请求API **/
     public String reqAPI(String api, Map<String, String> params, String body, List<String> servers, String method) throws NacosException {
 
         params.put(CommonParams.NAMESPACE_ID, getNamespaceId());
-
         if (CollectionUtils.isEmpty(servers) && StringUtils.isEmpty(nacosDomain)) {
             throw new NacosException(NacosException.INVALID_PARAM, "no server available");
         }
 
         NacosException exception = new NacosException();
-
-        if (servers != null && !servers.isEmpty()) {
-
+        if (!CollectionUtils.isEmpty(servers)) {
             Random random = new Random(System.currentTimeMillis());
             int index = random.nextInt(servers.size());
-
             for (int i = 0; i < servers.size(); i++) {
                 String server = servers.get(index);
                 try {
@@ -484,33 +497,34 @@ public class NamingProxy {
                 }
             }
         }
-
-        log.error("request: {} failed, servers: {}, code: {}, msg: {}",
-            api, servers, exception.getErrCode(), exception.getErrMsg());
-
+        log.error("request: {} failed, servers: {}, code: {}, msg: {}", api, servers, exception.getErrCode(), exception.getErrMsg());
         throw new NacosException(exception.getErrCode(), "failed to req API:/api/" + api + " after all servers(" + servers + ") tried: "
             + exception.getMessage());
 
     }
 
+    /**
+     * 请求封装安全信息（例如 用户名、密码、token等）
+     * @param params
+     */
     private void injectSecurityInfo(Map<String, String> params) {
 
-        // Inject token if exist:
+        // 封装Token
         if (StringUtils.isNotBlank(securityProxy.getAccessToken())) {
             params.put(Constants.ACCESS_TOKEN, securityProxy.getAccessToken());
         }
 
         // Inject ak/sk if exist:
-        String ak = getAccessKey();
-        String sk = getSecretKey();
+        String accessKey = getAccessKey();
+        String secretKey = getSecretKey();
         params.put("app", AppNameUtils.getAppName());
-        if (StringUtils.isNotBlank(ak) && StringUtils.isNotBlank(sk)) {
+        if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
             try {
                 String signData = getSignData(params.get("serviceName"));
-                String signature = SignUtil.sign(signData, sk);
+                String signature = SignUtil.sign(signData, secretKey);
                 params.put("signature", signature);
                 params.put("data", signData);
-                params.put("ak", ak);
+                params.put("ak", accessKey);
             } catch (Exception e) {
                 log.error("inject ak/sk failed.", e);
             }
@@ -535,12 +549,10 @@ public class NamingProxy {
 
     public String getAccessKey() {
         if (properties == null) {
-
             return SpasAdapter.getAk();
         }
 
         return TemplateUtils.stringEmptyAndThenExecute(properties.getProperty(PropertyKeyConst.ACCESS_KEY), new Callable<String>() {
-
             @Override
             public String call() {
                 return SpasAdapter.getAk();

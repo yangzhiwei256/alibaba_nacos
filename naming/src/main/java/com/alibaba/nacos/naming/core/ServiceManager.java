@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 
 /**
  * Core manager storing all services in Nacos
- *
+ * 服务管理器
  * @author nkorange
  */
 @Component
@@ -446,29 +446,32 @@ public class ServiceManager implements RecordListener<Service> {
     }
 
     /**
+     * 注册客户端服务
      * Register an instance to a service in AP mode.
      * <p>
      * This method creates service or cluster silently if they don't exist.
      *
-     * @param namespaceId id of namespace
-     * @param serviceName service name
-     * @param instance    instance to register
+     * @param namespaceId 命名空间
+     * @param serviceName 服务名称
+     * @param instance    客户端服务实例
      * @throws Exception any error occurred in the process
      */
     public void registerInstance(String namespaceId, String serviceName, Instance instance) throws NacosException {
-
         createEmptyService(namespaceId, serviceName, instance.isEphemeral());
-
         Service service = getService(namespaceId, serviceName);
-
         if (service == null) {
-            throw new NacosException(NacosException.INVALID_PARAM,
-                "service not found, namespace: " + namespaceId + ", service: " + serviceName);
+            throw new NacosException(NacosException.INVALID_PARAM, "service not found, namespace: " + namespaceId + ", service: " + serviceName);
         }
-
         addInstance(namespaceId, serviceName, instance.isEphemeral(), instance);
     }
 
+    /**
+     * 更新服务信息
+     * @param namespaceId 名称空间
+     * @param serviceName 服务名称
+     * @param instance 服务实例
+     * @throws NacosException
+     */
     public void updateInstance(String namespaceId, String serviceName, Instance instance) throws NacosException {
 
         Service service = getService(namespaceId, serviceName);
@@ -488,66 +491,87 @@ public class ServiceManager implements RecordListener<Service> {
     public void addInstance(String namespaceId, String serviceName, boolean ephemeral, Instance... ips) throws NacosException {
 
         String key = KeyBuilder.buildInstanceListKey(namespaceId, serviceName, ephemeral);
-
         Service service = getService(namespaceId, serviceName);
-
         synchronized (service) {
             List<Instance> instanceList = addIpAddresses(service, ephemeral, ips);
-
             Instances instances = new Instances();
             instances.setInstanceList(instanceList);
-
             consistencyService.put(key, instances);
         }
     }
 
+    /**
+     * 清除服务实例
+     * @param namespaceId 命名空间ID
+     * @param serviceName 服务名称
+     * @param ephemeral 是否临时服务节点
+     * @param ips 服务实例列表
+     * @throws NacosException
+     */
     public void removeInstance(String namespaceId, String serviceName, boolean ephemeral, Instance... ips) throws NacosException {
         Service service = getService(namespaceId, serviceName);
-
         synchronized (service) {
             removeInstance(namespaceId, serviceName, ephemeral, service, ips);
         }
     }
 
+    /**
+     * 剔除服务
+     * @param namespaceId 命名空间ID
+     * @param serviceName 服务名称
+     * @param ephemeral 是否临时节点
+     * @param service 服务配置信息
+     * @param ips 服务实例
+     * @throws NacosException
+     */
     public void removeInstance(String namespaceId, String serviceName, boolean ephemeral, Service service, Instance... ips) throws NacosException {
-
         String key = KeyBuilder.buildInstanceListKey(namespaceId, serviceName, ephemeral);
-
-        List<Instance> instanceList = substractIpAddresses(service, ephemeral, ips);
-
+        List<Instance> instanceList = removeIpAddresses(service, ephemeral, ips);
         Instances instances = new Instances();
         instances.setInstanceList(instanceList);
-
         consistencyService.put(key, instances);
     }
 
+    /**
+     * 获取服务实例
+     * @param namespaceId 名称空间
+     * @param serviceName 服务名
+     * @param cluster 集群名称
+     * @param ip 客户端IP
+     * @param port 客户端端口
+     * @return
+     */
     public Instance getInstance(String namespaceId, String serviceName, String cluster, String ip, int port) {
         Service service = getService(namespaceId, serviceName);
         if (service == null) {
             return null;
         }
 
-        List<String> clusters = new ArrayList<>();
-        clusters.add(cluster);
-
-        List<Instance> ips = service.allIPs(clusters);
-        if (ips == null || ips.isEmpty()) {
+        List<Instance> instanceList = service.allIPs(Collections.singletonList(cluster));
+        if (CollectionUtils.isEmpty(instanceList)) {
             return null;
         }
 
-        for (Instance instance : ips) {
+        for (Instance instance : instanceList) {
             if (instance.getIp().equals(ip) && instance.getPort() == port) {
                 return instance;
             }
         }
-
         return null;
     }
 
-    public List<Instance> updateIpAddresses(Service service, String action, boolean ephemeral, Instance... ips) throws NacosException {
+    /**
+     * 更新服务实例信息
+     * @param service 服务配置
+     * @param action 服务行为(add/remote)
+     * @param ephemeral 是否临时节点
+     * @param instanceList 服务实例列表
+     * @return
+     * @throws NacosException
+     */
+    public List<Instance> updateIpAddresses(Service service, String action, boolean ephemeral, Instance... instanceList) throws NacosException {
 
         Datum datum = consistencyService.get(KeyBuilder.buildInstanceListKey(service.getNamespaceId(), service.getName(), ephemeral));
-
         List<Instance> currentIPs = service.allIPs(ephemeral);
         Map<String, Instance> currentInstances = new HashMap<>(currentIPs.size());
         Set<String> currentInstanceIds = Sets.newHashSet();
@@ -561,20 +585,22 @@ public class ServiceManager implements RecordListener<Service> {
         if (datum != null) {
             instanceMap = setValid(((Instances) datum.value).getInstanceList(), currentInstances);
         } else {
-            instanceMap = new HashMap<>(ips.length);
+            instanceMap = new HashMap<>(instanceList.length);
         }
 
-        for (Instance instance : ips) {
+        for (Instance instance : instanceList) {
             if (!service.getClusterMap().containsKey(instance.getClusterName())) {
                 Cluster cluster = new Cluster(instance.getClusterName(), service);
                 cluster.init();
                 service.getClusterMap().put(instance.getClusterName(), cluster);
-                log.warn("cluster: {} not found, ip: {}, will create new cluster with default configuration.",
-                    instance.getClusterName(), instance.toJSON());
+                log.warn("cluster: {} not found, ip: {}, will create new cluster with default configuration.", instance.getClusterName(), instance.toJSON());
             }
 
+            //解除服务注册
             if (UtilsAndCommons.UPDATE_INSTANCE_ACTION_REMOVE.equals(action)) {
                 instanceMap.remove(instance.getDatumKey());
+
+            //新增新增注册
             } else {
                 instance.setInstanceId(instance.generateInstanceId(currentInstanceIds));
                 instanceMap.put(instance.getDatumKey(), instance);
@@ -590,7 +616,15 @@ public class ServiceManager implements RecordListener<Service> {
         return new ArrayList<>(instanceMap.values());
     }
 
-    public List<Instance> substractIpAddresses(Service service, boolean ephemeral, Instance... ips) throws NacosException {
+    /**
+     * 解除服务注册
+     * @param service 服务配置信息
+     * @param ephemeral 是否临时节点
+     * @param ips 服务实例列表
+     * @return
+     * @throws NacosException
+     */
+    public List<Instance> removeIpAddresses(Service service, boolean ephemeral, Instance... ips) throws NacosException {
         return updateIpAddresses(service, UtilsAndCommons.UPDATE_INSTANCE_ACTION_REMOVE, ephemeral, ips);
     }
 
@@ -598,8 +632,13 @@ public class ServiceManager implements RecordListener<Service> {
         return updateIpAddresses(service, UtilsAndCommons.UPDATE_INSTANCE_ACTION_ADD, ephemeral, ips);
     }
 
+    /**
+     * 设置有效的服务实例
+     * @param oldInstances 旧服务列表(Nacos服务端缓存)
+     * @param map
+     * @return
+     */
     private Map<String, Instance> setValid(List<Instance> oldInstances, Map<String, Instance> map) {
-
         Map<String, Instance> instanceMap = new HashMap<>(oldInstances.size());
         for (Instance instance : oldInstances) {
             Instance instance1 = map.get(instance.toIPAddr());

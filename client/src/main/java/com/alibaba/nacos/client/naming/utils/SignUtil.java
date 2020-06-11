@@ -20,20 +20,28 @@ import com.alibaba.nacos.client.identify.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author pbting
  * @date 2019-01-22 10:20 PM
  */
 public class SignUtil {
-    public static final Charset UTF8 = Charset.forName("UTF-8");
+    public static final Charset UTF8 = StandardCharsets.UTF_8;
 
     public SignUtil() {
     }
 
-    public static String sign(String data, String key) throws Exception {
+    /**
+     * 数据签名
+     * @param data 源数据
+     * @param secretKey 密钥
+     * @return
+     * @throws Exception
+     */
+    public static String sign(String data, String secretKey) throws Exception {
         try {
-            byte[] signature = sign(data.getBytes(UTF8), key.getBytes(UTF8),
+            byte[] signature = sign(data.getBytes(UTF8), secretKey.getBytes(UTF8),
                 SignUtil.SigningAlgorithm.HmacSHA1);
             return new String(Base64.encodeBase64(signature));
         } catch (Exception var3) {

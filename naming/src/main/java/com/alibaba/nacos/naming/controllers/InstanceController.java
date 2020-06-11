@@ -103,23 +103,25 @@ public class InstanceController {
         return "ok";
     }
 
+    /**
+     * 解除服务注册
+     * @param request
+     * @return
+     * @throws Exception
+     */
     @CanDistro
     @DeleteMapping
     @Secured(parser = NamingResourceParser.class, action = ActionTypes.WRITE)
     public String deregister(HttpServletRequest request) throws Exception {
         Instance instance = getIPAddress(request);
-        String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID,
-            Constants.DEFAULT_NAMESPACE_ID);
+        String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID, Constants.DEFAULT_NAMESPACE_ID);
         String serviceName = WebUtils.required(request, CommonParams.SERVICE_NAME);
-
         Service service = serviceManager.getService(namespaceId, serviceName);
         if (service == null) {
             log.warn("remove instance from non-exist service: {}", serviceName);
             return "ok";
         }
-
         serviceManager.removeInstance(namespaceId, serviceName, instance.isEphemeral(), instance);
-
         return "ok";
     }
 
@@ -188,6 +190,12 @@ public class InstanceController {
         return "ok";
     }
 
+    /**
+     * 获取服务信息
+     * @param request
+     * @return
+     * @throws Exception
+     */
     @GetMapping("/list")
     @Secured(parser = NamingResourceParser.class, action = ActionTypes.READ)
     public JSONObject list(HttpServletRequest request) throws Exception {
@@ -256,6 +264,12 @@ public class InstanceController {
         throw new NacosException(NacosException.NOT_FOUND, "no matched ip found!");
     }
 
+    /**
+     * 客户端心跳检测
+     * @param request
+     * @return
+     * @throws Exception
+     */
     @CanDistro
     @PutMapping("/beat")
     @Secured(parser = NamingResourceParser.class, action = ActionTypes.WRITE)
@@ -265,10 +279,8 @@ public class InstanceController {
 
         result.put("clientBeatInterval", switchDomain.getClientBeatInterval());
         String serviceName = WebUtils.required(request, CommonParams.SERVICE_NAME);
-        String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID,
-            Constants.DEFAULT_NAMESPACE_ID);
-        String clusterName = WebUtils.optional(request, CommonParams.CLUSTER_NAME,
-            UtilsAndCommons.DEFAULT_CLUSTER_NAME);
+        String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID, Constants.DEFAULT_NAMESPACE_ID);
+        String clusterName = WebUtils.optional(request, CommonParams.CLUSTER_NAME, UtilsAndCommons.DEFAULT_CLUSTER_NAME);
         String ip = WebUtils.optional(request, "ip", StringUtils.EMPTY);
         int port = Integer.parseInt(WebUtils.optional(request, "port", "0"));
         String beat = WebUtils.optional(request, "beat", StringUtils.EMPTY);
@@ -306,15 +318,12 @@ public class InstanceController {
             instance.setServiceName(serviceName);
             instance.setInstanceId(instance.getInstanceId());
             instance.setEphemeral(clientBeat.isEphemeral());
-
             serviceManager.registerInstance(namespaceId, serviceName, instance);
         }
 
         Service service = serviceManager.getService(namespaceId, serviceName);
-
         if (service == null) {
-            throw new NacosException(NacosException.SERVER_ERROR,
-                "service not found: " + serviceName + "@" + namespaceId);
+            throw new NacosException(NacosException.SERVER_ERROR, "service not found: " + serviceName + "@" + namespaceId);
         }
         if (clientBeat == null) {
             clientBeat = new RsInfo();
@@ -323,7 +332,6 @@ public class InstanceController {
             clientBeat.setCluster(clusterName);
         }
         service.processClientBeat(clientBeat);
-
         result.put(CommonParams.CODE, NamingResponseCode.OK);
         result.put("clientBeatInterval", instance.getInstanceHeartBeatInterval());
         result.put(SwitchEntry.LIGHT_BEAT_ENABLED, switchDomain.isLightBeatEnabled());

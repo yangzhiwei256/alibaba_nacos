@@ -20,15 +20,14 @@ import io.prometheus.client.Histogram;
 
 /**
  * Metrics Monitor
- *
  * @author Nacos
  */
 public class MetricsMonitor {
-    private static Gauge nacosMonitor = Gauge.build()
+    private static final Gauge nacosMonitor = Gauge.build()
         .name("nacos_monitor").labelNames("module", "name")
         .help("nacos_monitor").register();
 
-    private static Histogram nacosClientRequestHistogram = Histogram.build().labelNames("module", "method", "url", "code")
+    private static final Histogram nacosClientRequestHistogram = Histogram.build().labelNames("module", "method", "url", "code")
         .name("nacos_client_request").help("nacos_client_request")
         .register();
 

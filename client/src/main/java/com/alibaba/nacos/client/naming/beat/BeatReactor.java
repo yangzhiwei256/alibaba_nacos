@@ -29,11 +29,15 @@ import com.alibaba.nacos.client.naming.utils.UtilAndComs;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 
 /**
+ * 服务心跳反应器
  * @author harold
  */
 @Slf4j
@@ -45,7 +49,8 @@ public class BeatReactor {
 
     private boolean lightBeatEnabled = false;
 
-    public final Map<String, BeatInfo> dom2Beat = new ConcurrentHashMap<String, BeatInfo>();
+    /** 缓存心跳信息 **/
+    public final Map<String, BeatInfo> dom2Beat = new ConcurrentHashMap<>();
 
     public BeatReactor(NamingProxy serverProxy) {
         this(serverProxy, UtilAndComs.DEFAULT_CLIENT_BEAT_THREAD_COUNT);
@@ -53,19 +58,21 @@ public class BeatReactor {
 
     public BeatReactor(NamingProxy serverProxy, int threadCount) {
         this.serverProxy = serverProxy;
-        executorService = new ScheduledThreadPoolExecutor(threadCount, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r);
-                thread.setDaemon(true);
-                thread.setName("com.alibaba.nacos.naming.beat.sender");
-                return thread;
-            }
+        executorService = new ScheduledThreadPoolExecutor(threadCount, runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setDaemon(true);
+            thread.setName("com.alibaba.nacos.naming.beat.sender");
+            return thread;
         });
     }
 
+    /**
+     * 添加服务心跳信息
+     * @param serviceName 服务名称
+     * @param beatInfo 心跳信息
+     */
     public void addBeatInfo(String serviceName, BeatInfo beatInfo) {
-        log.info("[BEAT] adding beat: {} to beat map.", beatInfo);
+        log.info("[BEAT] adding heart beat: {} to beat map.", beatInfo);
         String key = buildKey(serviceName, beatInfo.getIp(), beatInfo.getPort());
         BeatInfo existBeat = null;
         //fix #1733
@@ -77,8 +84,14 @@ public class BeatReactor {
         MetricsMonitor.getDom2BeatSizeMonitor().set(dom2Beat.size());
     }
 
+    /**
+     * 清除服务心跳信息（取消服务注册）
+     * @param serviceName 服务名称
+     * @param ip 客户端服务IP
+     * @param port 客户端服务端口
+     */
     public void removeBeatInfo(String serviceName, String ip, int port) {
-        log.info("[BEAT] removing beat: {}:{}:{} from beat map.", serviceName, ip, port);
+        log.info("[BEAT] removing heart beat: {}:{}:{} from beat map.", serviceName, ip, port);
         BeatInfo beatInfo = dom2Beat.remove(buildKey(serviceName, ip, port));
         if (beatInfo == null) {
             return;
@@ -88,11 +101,13 @@ public class BeatReactor {
     }
 
     private String buildKey(String serviceName, String ip, int port) {
-        return serviceName + Constants.NAMING_INSTANCE_ID_SPLITTER
-            + ip + Constants.NAMING_INSTANCE_ID_SPLITTER + port;
+        return serviceName + Constants.NAMING_INSTANCE_ID_SPLITTER + ip + Constants.NAMING_INSTANCE_ID_SPLITTER + port;
     }
 
-    class BeatTask implements Runnable {
+    /**
+     * 服务心跳检测任务
+     */
+    private class BeatTask implements Runnable {
 
         BeatInfo beatInfo;
 
@@ -121,6 +136,8 @@ public class BeatReactor {
                 if (result.containsKey(CommonParams.CODE)) {
                     code = result.getIntValue(CommonParams.CODE);
                 }
+
+                //服务未注册到nacos，则重新注册
                 if (code == NamingResponseCode.RESOURCE_NOT_FOUND) {
                     Instance instance = new Instance();
                     instance.setPort(beatInfo.getPort());
@@ -132,8 +149,7 @@ public class BeatReactor {
                     instance.setInstanceId(instance.getInstanceId());
                     instance.setEphemeral(true);
                     try {
-                        serverProxy.registerService(beatInfo.getServiceName(),
-                            NamingUtils.getGroupName(beatInfo.getServiceName()), instance);
+                        serverProxy.registerService(beatInfo.getServiceName(),NamingUtils.getGroupName(beatInfo.getServiceName()), instance);
                     } catch (Exception ignore) {
                     }
                 }
@@ -142,6 +158,7 @@ public class BeatReactor {
                     JSON.toJSONString(beatInfo), ne.getErrCode(), ne.getErrMsg());
 
             }
+            //重新调度下个心跳任务
             executorService.schedule(new BeatTask(beatInfo), nextTime, TimeUnit.MILLISECONDS);
         }
     }

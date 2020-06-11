@@ -34,8 +34,8 @@ import java.util.List;
 
 
 /**
+ * 服务端心跳检测客户端任务
  * Check and update statues of ephemeral instances, remove them if they have been expired.
- *
  * @author nkorange
  */
 @Slf4j
@@ -85,6 +85,7 @@ public class ClientBeatCheckTask implements Runnable {
 
             // first set health status of instances:
             for (Instance instance : instances) {
+                //超时检测： 5 * 13 = 15s, 3次客户端心跳上报周期，距离最后依次超时超过3次心跳时间则执行下列逻辑，服务实例设置未不健康状态
                 if (System.currentTimeMillis() - instance.getLastBeat() > instance.getInstanceHeartBeatTimeOut()) {
                     if (!instance.isMarked()) {
                         if (instance.isHealthy()) {
@@ -92,7 +93,11 @@ public class ClientBeatCheckTask implements Runnable {
                             log.info("{POS} {IP-DISABLED} valid: {}:{}@{}@{}, region: {}, msg: client timeout after {}, last beat: {}",
                                 instance.getIp(), instance.getPort(), instance.getClusterName(), service.getName(),
                                 UtilsAndCommons.LOCALHOST_SITE, instance.getInstanceHeartBeatTimeOut(), instance.getLastBeat());
+
+                            //nacos服务端发送UDP包给客户端检测服务是否正常
                             getPushService().serviceChanged(service);
+
+                            //发送心跳超时事件
                             SpringContext.getAppContext().publishEvent(new InstanceHeartbeatTimeoutEvent(this, instance));
                         }
                     }
@@ -110,6 +115,7 @@ public class ClientBeatCheckTask implements Runnable {
                     continue;
                 }
 
+                //具体最后1次心跳超时30s,剔除服务实例
                 if (System.currentTimeMillis() - instance.getLastBeat() > instance.getIpDeleteTimeout()) {
                     // delete instance
                     log.info("[AUTO-DELETE-IP] service: {}, ip: {}", service.getName(), JSON.toJSONString(instance));

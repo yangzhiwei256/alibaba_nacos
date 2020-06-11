@@ -44,52 +44,48 @@ public class FailoverReactor {
 
     private final HostReactor hostReactor;
 
-    public FailoverReactor(HostReactor hostReactor, String cacheDir) {
-        this.hostReactor = hostReactor;
-        this.failoverDir = cacheDir + "/failover";
-        this.init();
-    }
+    private final Map<String, String> switchParams = new ConcurrentHashMap<String, String>();
+    private static final long DAY_PERIOD_MINUTES = 24 * 60;
 
     private Map<String, ServiceInfo> serviceMap = new ConcurrentHashMap<String, ServiceInfo>();
+
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
         @Override
-        public Thread newThread(Runnable r) {
-            Thread thread = new Thread(r);
+        public Thread newThread(Runnable runnable) {
+            Thread thread = new Thread(runnable);
             thread.setDaemon(true);
             thread.setName("com.alibaba.nacos.naming.failover");
             return thread;
         }
     });
 
-    private final Map<String, String> switchParams = new ConcurrentHashMap<String, String>();
-    private static final long DAY_PERIOD_MINUTES = 24 * 60;
+    public FailoverReactor(HostReactor hostReactor, String cacheDir) {
+        this.hostReactor = hostReactor;
+        this.failoverDir = cacheDir + "/failover";
+        this.init();
+    }
 
     public void init() {
 
         executorService.scheduleWithFixedDelay(new SwitchRefresher(), 0L, 5000L, TimeUnit.MILLISECONDS);
-
         executorService.scheduleWithFixedDelay(new DiskFileWriter(), 30, DAY_PERIOD_MINUTES, TimeUnit.MINUTES);
 
         // backup file on startup if failover directory is empty.
-        executorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    File cacheDir = new File(failoverDir);
-
-                    if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-                        throw new IllegalStateException("failed to create cache dir: " + failoverDir);
-                    }
-
-                    File[] files = cacheDir.listFiles();
-                    if (files == null || files.length <= 0) {
-                        new DiskFileWriter().run();
-                    }
-                } catch (Throwable e) {
-                    log.error("[NA] failed to backup file on startup.", e);
+        executorService.schedule(() -> {
+            try {
+                File cacheDir = new File(failoverDir);
+                if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+                    throw new IllegalStateException("failed to create cache dir: " + failoverDir);
                 }
 
+                File[] files = cacheDir.listFiles();
+                if (files == null || files.length <= 0) {
+                    new DiskFileWriter().run();
+                }
+            } catch (Throwable e) {
+                log.error("[NA] failed to backup file on startup.", e);
             }
+
         }, 10000L, TimeUnit.MILLISECONDS);
     }
 
@@ -100,7 +96,7 @@ public class FailoverReactor {
         return startDT.getTime();
     }
 
-    class SwitchRefresher implements Runnable {
+    private class SwitchRefresher implements Runnable {
         long lastModifiedMillis = 0L;
 
         @Override
@@ -144,7 +140,7 @@ public class FailoverReactor {
         }
     }
 
-    class FailoverFileReader implements Runnable {
+    private class FailoverFileReader implements Runnable {
 
         @Override
         public void run() {
@@ -213,11 +209,14 @@ public class FailoverReactor {
         }
     }
 
-    class DiskFileWriter extends TimerTask {
+    /**
+     * 服务数据落地磁盘
+     */
+    private class DiskFileWriter extends TimerTask {
         @Override
         public void run() {
-            Map<String, ServiceInfo> map = hostReactor.getServiceInfoMap();
-            for (Map.Entry<String, ServiceInfo> entry : map.entrySet()) {
+            Map<String, ServiceInfo> serviceInfoMap = hostReactor.getServiceInfoMap();
+            for (Map.Entry<String, ServiceInfo> entry : serviceInfoMap.entrySet()) {
                 ServiceInfo serviceInfo = entry.getValue();
                 if (StringUtils.equals(serviceInfo.getKey(), UtilAndComs.ALL_IPS) || StringUtils.equals(
                     serviceInfo.getName(), UtilAndComs.ENV_LIST_KEY)
@@ -238,12 +237,10 @@ public class FailoverReactor {
 
     public ServiceInfo getService(String key) {
         ServiceInfo serviceInfo = serviceMap.get(key);
-
         if (serviceInfo == null) {
             serviceInfo = new ServiceInfo();
             serviceInfo.setName(key);
         }
-
         return serviceInfo;
     }
 }

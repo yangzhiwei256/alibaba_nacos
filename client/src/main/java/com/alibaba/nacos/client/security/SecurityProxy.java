@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Security proxy to update security information
- *
+ * 安全代理，封装nacos客户端访问nacos集群的安全信息
  * @author nkorange
  * @since 1.2.0
  */
@@ -85,25 +85,33 @@ public class SecurityProxy {
             "/nacos" : properties.getProperty(PropertyKeyConst.CONTEXT_PATH);
     }
 
+    /**
+     * nacos客户端登陆nacos服务器，刷新Token，便于后续交互
+     * @param servers
+     * @return
+     */
     public boolean login(List<String> servers) {
 
-        try {
-            if ((System.currentTimeMillis() - lastRefreshTime) < TimeUnit.SECONDS.toMillis(tokenTtl - tokenRefreshWindow)) {
-                return true;
-            }
-
-            for (String server : servers) {
-                if (login(server)) {
-                    lastRefreshTime = System.currentTimeMillis();
-                    return true;
-                }
-            }
-        } catch (Throwable t) {
+        // 判断当前时间是否到过期时间节点前 tokenTtl/10, 过期时间节点前 tokenTtl/10 内重新执行登陆操作，刷新Token、
+        if ((System.currentTimeMillis() - lastRefreshTime) < TimeUnit.SECONDS.toMillis(tokenTtl - tokenRefreshWindow)) {
+            return true;
         }
 
+        //nacos集群任意节点登陆登陆成功直接返回
+        for (String server : servers) {
+            if (login(server)) {
+                lastRefreshTime = System.currentTimeMillis();
+                return true;
+            }
+        }
         return false;
     }
 
+    /**
+     * 登陆Nacos 服务器
+     * @param server 服务器地址
+     * @return
+     */
     public boolean login(String server) {
 
         if (StringUtils.isNotBlank(username)) {

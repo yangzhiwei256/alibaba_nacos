@@ -67,21 +67,18 @@ public class HostReactor {
     public HostReactor(EventDispatcher eventDispatcher, NamingProxy serverProxy, String cacheDir,
                        boolean loadCacheAtStart, int pollingThreadCount) {
 
-        executor = new ScheduledThreadPoolExecutor(pollingThreadCount, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r);
-                thread.setDaemon(true);
-                thread.setName("com.alibaba.nacos.client.naming.updater");
-                return thread;
-            }
+        executor = new ScheduledThreadPoolExecutor(pollingThreadCount, runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setDaemon(true);
+            thread.setName("com.alibaba.nacos.client.naming.updater");
+            return thread;
         });
 
         this.eventDispatcher = eventDispatcher;
         this.serverProxy = serverProxy;
         this.cacheDir = cacheDir;
         if (loadCacheAtStart) {
-            this.serviceInfoMap = new ConcurrentHashMap<String, ServiceInfo>(DiskCache.read(this.cacheDir));
+            this.serviceInfoMap = new ConcurrentHashMap<>(DiskCache.read(this.cacheDir));
         } else {
             this.serviceInfoMap = new ConcurrentHashMap<String, ServiceInfo>(16);
         }
@@ -207,9 +204,7 @@ public class HostReactor {
     }
 
     private ServiceInfo getServiceInfo0(String serviceName, String clusters) {
-
         String key = ServiceInfo.getKey(serviceName, clusters);
-
         return serviceInfoMap.get(key);
     }
 
@@ -221,6 +216,12 @@ public class HostReactor {
         return null;
     }
 
+    /**
+     * 获取集群服务信息
+     * @param serviceName 服务名称
+     * @param clusters 集群名称
+     * @return
+     */
     public ServiceInfo getServiceInfo(final String serviceName, final String clusters) {
 
         log.debug("failover-mode: " + failoverReactor.isFailoverSwitch());
@@ -233,9 +234,7 @@ public class HostReactor {
 
         if (null == serviceObj) {
             serviceObj = new ServiceInfo(serviceName, clusters);
-
             serviceInfoMap.put(serviceObj.getKey(), serviceObj);
-
             updatingMap.put(serviceName, new Object());
             updateServiceNow(serviceName, clusters);
             updatingMap.remove(serviceName);
@@ -253,9 +252,7 @@ public class HostReactor {
                 }
             }
         }
-
         scheduleUpdateIfAbsent(serviceName, clusters);
-
         return serviceInfoMap.get(serviceObj.getKey());
     }
 
@@ -279,9 +276,7 @@ public class HostReactor {
     public void updateServiceNow(String serviceName, String clusters) {
         ServiceInfo oldService = getServiceInfo0(serviceName, clusters);
         try {
-
             String result = serverProxy.queryList(serviceName, clusters, pushReceiver.getUDPPort(), false);
-
             if (StringUtils.isNotEmpty(result)) {
                 processServiceJSON(result);
             }
@@ -304,7 +299,7 @@ public class HostReactor {
         }
     }
 
-    public class UpdateTask implements Runnable {
+    private class UpdateTask implements Runnable {
         long lastRefTime = Long.MAX_VALUE;
         private final String clusters;
         private final String serviceName;

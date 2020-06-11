@@ -20,18 +20,36 @@ import com.alibaba.fastjson.JSON;
 import java.util.Map;
 
 /**
+ * 服务心跳信息
  * @author nkorange
  */
 public class BeatInfo {
 
+    /** 服务端口 **/
     private int port;
+
+    /** 服务IP **/
     private String ip;
+
+    /** 服务权重 **/
     private double weight;
+
+    /** 服务名称: 格式： groupName@@serviceName **/
     private String serviceName;
+
+    /** 集群名称 **/
     private String cluster;
+
+    /** 元数据 **/
     private Map<String, String> metadata;
+
+    /** 是否调度 **/
     private volatile boolean scheduled;
+
+    /** 心跳周期 **/
     private volatile long period;
+
+    /** 心跳是否停止 **/
     private volatile boolean stopped;
 
     @Override

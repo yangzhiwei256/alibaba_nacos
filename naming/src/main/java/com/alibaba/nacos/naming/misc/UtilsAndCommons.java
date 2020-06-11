@@ -112,8 +112,10 @@ public class UtilsAndCommons {
 
     public static final String NAMESPACE_SERVICE_CONNECTOR = "##";
 
+    /** 新增服务注册 **/
     public static final String UPDATE_INSTANCE_ACTION_ADD = "add";
 
+    /** 解除服务注册 **/
     public static final String UPDATE_INSTANCE_ACTION_REMOVE = "remove";
 
     public static final String DATA_BASE_DIR = SystemUtils.getNacosHomePath() + File.separator + "data" + File.separator + "naming";
