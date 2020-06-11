@@ -10,9 +10,11 @@ spring:
       discovery: ## 注意服务注册名称不能使用下划线
         username: nacos
         password: nacos
+        ## 是否是临时节点，默认临时节点，保证AP, 持久化节点基于raft保证cp
+        ephemeral: true
         server-addr: localhost:8848
         namespace: ${spring.profiles.active}
         group: ${spring.application.name}
         metadata:
-          version: 1.0.0 ## 方便后续根据版本号灰度发布
+          version: 1.0.0 ## 方便后续网关根据版本号灰度发布
           description: 版本1.0.0

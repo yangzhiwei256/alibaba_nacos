@@ -175,6 +175,11 @@ public class NacosDiscoveryProperties {
 
 	private String password = "";
 
+    /**
+     * 是否是临时节点: 开启持久化模式(CP)，服务实例数据持久化数据，但要求nacos集群必须真实 >=3 节点，否则raft无法保证强一致性，服务也无法注册
+     */
+    private Boolean ephemeral = true;
+
     public String getUsername() {
         return username;
     }
@@ -413,7 +418,15 @@ public class NacosDiscoveryProperties {
 		this.group = group;
 	}
 
-	@Override
+    public Boolean isEphemeral() {
+        return ephemeral;
+    }
+
+    public void setEphemeral(Boolean ephemeral) {
+        this.ephemeral = ephemeral;
+    }
+
+    @Override
 	public String toString() {
 		return "NacosDiscoveryProperties{" + "serverAddr='" + serverAddr + '\''
 				+ ", endpoint='" + endpoint + '\'' + ", namespace='" + namespace + '\''
