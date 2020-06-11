@@ -18,19 +18,37 @@ package com.alibaba.nacos.api.config.listener;
 import java.util.concurrent.Executor;
 
 /**
- * Listener Adapter,use default notify thread
+ * Shared Listener
  *
- * @author water.lyl
+ * @author Nacos
  */
 @SuppressWarnings("PMD.AbstractClassShouldStartWithAbstractNamingRule")
-public abstract class AbstractListener implements Listener {
+public abstract class AbstractSharedConfigListener implements ConfigListener {
 
-    /**
-     * Use default executor
-     */
+    private volatile String dataId;
+    private volatile String group;
+
+    public final void fillContext(String dataId, String group) {
+        this.dataId = dataId;
+        this.group = group;
+    }
+
+    @Override
+    public final void receiveConfigInfo(String configInfo) {
+        innerReceive(dataId, group, configInfo);
+    }
+
     @Override
     public Executor getExecutor() {
         return null;
     }
 
+    /**
+     * receive
+     *
+     * @param dataId     data ID
+     * @param group      group
+     * @param configInfo content
+     */
+    public abstract void innerReceive(String dataId, String group, String configInfo);
 }

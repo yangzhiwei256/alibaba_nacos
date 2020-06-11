@@ -15,7 +15,7 @@
  */
 package com.alibaba.nacos.client.config.listener.impl;
 
-import com.alibaba.nacos.api.config.listener.AbstractListener;
+import com.alibaba.nacos.api.config.listener.AbstractConfigListener;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,7 +30,7 @@ import java.util.Properties;
  */
 @SuppressWarnings("PMD.AbstractClassShouldStartWithAbstractNamingRule")
 @Slf4j
-public abstract class PropertiesListener extends AbstractListener {
+public abstract class PropertiesConfigListener extends AbstractConfigListener {
 
     @Override
     public void receiveConfigInfo(String configInfo) {

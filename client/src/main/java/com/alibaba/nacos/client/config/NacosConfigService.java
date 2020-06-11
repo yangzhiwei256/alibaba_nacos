@@ -18,7 +18,7 @@ package com.alibaba.nacos.client.config;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.config.ConfigService;
-import com.alibaba.nacos.api.config.listener.Listener;
+import com.alibaba.nacos.api.config.listener.ConfigListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.filter.impl.ConfigFilterChainManager;
 import com.alibaba.nacos.client.config.filter.impl.ConfigRequest;
@@ -91,15 +91,15 @@ public class NacosConfigService implements ConfigService {
     }
 
     @Override
-    public String getConfigAndSignListener(String dataId, String group, long timeoutMs, Listener listener) throws NacosException {
+    public String getConfigAndSignListener(String dataId, String group, long timeoutMs, ConfigListener configListener) throws NacosException {
         String content = getConfig(dataId, group, timeoutMs);
-        worker.addTenantListenersWithContent(dataId, group, content, Collections.singletonList(listener));
+        worker.addTenantListenersWithContent(dataId, group, content, Collections.singletonList(configListener));
         return content;
     }
 
     @Override
-    public void addListener(String dataId, String group, Listener listener) throws NacosException {
-        worker.addTenantListeners(dataId, group, Collections.singletonList(listener));
+    public void addListener(String dataId, String group, ConfigListener configListener) throws NacosException {
+        worker.addTenantListeners(dataId, group, Collections.singletonList(configListener));
     }
 
     @Override
@@ -113,8 +113,8 @@ public class NacosConfigService implements ConfigService {
     }
 
     @Override
-    public void removeListener(String dataId, String group, Listener listener) {
-        worker.removeTenantListener(dataId, group, listener);
+    public void removeListener(String dataId, String group, ConfigListener configListener) {
+        worker.removeTenantListener(dataId, group, configListener);
     }
 
     private String getConfigInner(String tenant, String dataId, String group, long timeoutMs) throws NacosException {

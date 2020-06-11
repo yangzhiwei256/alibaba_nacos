@@ -13,24 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.nacos.client.config.listener.impl;
+package com.alibaba.nacos.api.config.listener;
 
-import com.alibaba.nacos.api.config.ConfigChangeEvent;
-import com.alibaba.nacos.api.config.listener.AbstractListener;
+import java.util.concurrent.Executor;
 
 /**
- * AbstractConfigChangeListener
- *
- * @author rushsky518
+ * Nacos 配置监听器接口
+ * Listener for watch config
+ * @author Nacos
  */
-public abstract class AbstractConfigChangeListener extends AbstractListener {
+public interface ConfigListener {
+
     /**
-     * handle config change
-     * @param event
+     * Get executor for execute this receive
+     *
+     * @return Executor
      */
-    public abstract void receiveConfigChange(final ConfigChangeEvent event);
+    Executor getExecutor();
 
-    @Override
-    public void receiveConfigInfo(final String configInfo) {}
+    /**
+     * Receive config info
+     *
+     * @param configInfo config info
+     */
+    void receiveConfigInfo(final String configInfo);
 }
-

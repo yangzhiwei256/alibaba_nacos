@@ -62,7 +62,7 @@
         <appender-ref ref="core-auth"/>
     </logger>
 
-    <logger name="com.alibaba.nacos.core.listener.StartingSpringApplicationRunListener">
+    <logger name="com.alibaba.nacos.core.configListener.StartingSpringApplicationRunListener">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="rootFile"/>
         <level value="DEBUG"/>

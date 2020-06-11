@@ -18,7 +18,7 @@ package com.alibaba.nacos.client.config.impl;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.config.ConfigType;
-import com.alibaba.nacos.api.config.listener.Listener;
+import com.alibaba.nacos.api.config.listener.ConfigListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.common.GroupKey;
 import com.alibaba.nacos.client.config.filter.impl.ConfigFilterChainManager;
@@ -54,15 +54,15 @@ import static com.alibaba.nacos.api.common.Constants.*;
 @Slf4j
 public class ClientWorker {
 
-    public void addListeners(String dataId, String group, List<? extends Listener> listeners) {
+    public void addConfigListeners(String dataId, String group, List<? extends ConfigListener> listeners) {
         group = null2defaultGroup(group);
         CacheData cache = addCacheDataIfAbsent(dataId, group);
-        for (Listener listener : listeners) {
+        for (ConfigListener listener : listeners) {
             cache.addListener(listener);
         }
     }
 
-    public void removeListener(String dataId, String group, Listener listener) {
+    public void removeConfigListener(String dataId, String group, ConfigListener listener) {
         group = null2defaultGroup(group);
         CacheData cache = getCache(dataId, group);
         if (null != cache) {
@@ -73,26 +73,26 @@ public class ClientWorker {
         }
     }
 
-    public void addTenantListeners(String dataId, String group, List<? extends Listener> listeners) throws NacosException {
+    public void addTenantListeners(String dataId, String group, List<? extends ConfigListener> listeners) throws NacosException {
         group = null2defaultGroup(group);
         String tenant = agent.getTenant();
         CacheData cache = addCacheDataIfAbsent(dataId, group, tenant);
-        for (Listener listener : listeners) {
+        for (ConfigListener listener : listeners) {
             cache.addListener(listener);
         }
     }
 
-    public void addTenantListenersWithContent(String dataId, String group, String content, List<? extends Listener> listeners) throws NacosException {
+    public void addTenantListenersWithContent(String dataId, String group, String content, List<? extends ConfigListener> listeners) throws NacosException {
         group = null2defaultGroup(group);
         String tenant = agent.getTenant();
         CacheData cache = addCacheDataIfAbsent(dataId, group, tenant);
         cache.setContent(content);
-        for (Listener listener : listeners) {
+        for (ConfigListener listener : listeners) {
             cache.addListener(listener);
         }
     }
 
-    public void removeTenantListener(String dataId, String group, Listener listener) {
+    public void removeTenantListener(String dataId, String group, ConfigListener listener) {
         group = null2defaultGroup(group);
         String tenant = agent.getTenant();
         CacheData cache = getCache(dataId, group, tenant);
@@ -485,7 +485,7 @@ public class ClientWorker {
         enableRemoteSyncConfig = Boolean.parseBoolean(properties.getProperty(PropertyKeyConst.ENABLE_REMOTE_SYNC_CONFIG));
     }
 
-    class LongPollingRunnable implements Runnable {
+    private class LongPollingRunnable implements Runnable {
         private final int taskId;
 
         public LongPollingRunnable(int taskId) {

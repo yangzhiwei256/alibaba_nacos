@@ -25,9 +25,9 @@ public class NacosRefreshHistory {
 
 	private static final int MAX_SIZE = 20;
 
-	private LinkedList<Record> records = new LinkedList<>();
+	private final LinkedList<Record> records = new LinkedList<>();
 
-	private ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>() {
+	private final ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>() {
 		@Override
 		protected DateFormat initialValue() {
 			return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -44,31 +44,36 @@ public class NacosRefreshHistory {
 	public LinkedList<Record> getRecords() {
 		return records;
 	}
+
+    /**
+     * nacos配置历史记录
+     */
+    private static class Record {
+
+        private final String timestamp;
+
+        private final String dataId;
+
+        private final String md5;
+
+        public Record(String timestamp, String dataId, String md5) {
+            this.timestamp = timestamp;
+            this.dataId = dataId;
+            this.md5 = md5;
+        }
+
+        public String getTimestamp() {
+            return timestamp;
+        }
+
+        public String getDataId() {
+            return dataId;
+        }
+
+        public String getMd5() {
+            return md5;
+        }
+    }
 }
 
-class Record {
 
-	private final String timestamp;
-
-	private final String dataId;
-
-	private final String md5;
-
-	public Record(String timestamp, String dataId, String md5) {
-		this.timestamp = timestamp;
-		this.dataId = dataId;
-		this.md5 = md5;
-	}
-
-	public String getTimestamp() {
-		return timestamp;
-	}
-
-	public String getDataId() {
-		return dataId;
-	}
-
-	public String getMd5() {
-		return md5;
-	}
-}

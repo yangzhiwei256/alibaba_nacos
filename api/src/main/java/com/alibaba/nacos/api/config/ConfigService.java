@@ -15,7 +15,7 @@
  */
 package com.alibaba.nacos.api.config;
 
-import com.alibaba.nacos.api.config.listener.Listener;
+import com.alibaba.nacos.api.config.listener.ConfigListener;
 import com.alibaba.nacos.api.exception.NacosException;
 
 /**
@@ -46,11 +46,11 @@ public interface ConfigService {
      * @param dataId    dataId
      * @param group     group
      * @param timeoutMs read timeout
-     * @param listener {@link Listener}
+     * @param configListener {@link ConfigListener}
      * @return config value
      * @throws NacosException NacosException
      */
-    String getConfigAndSignListener(String dataId, String group, long timeoutMs, Listener listener) throws NacosException;
+    String getConfigAndSignListener(String dataId, String group, long timeoutMs, ConfigListener configListener) throws NacosException;
 
     /**
      * Add a listener to the configuration, after the server modified the
@@ -62,10 +62,10 @@ public interface ConfigService {
      *
      * @param dataId   dataId
      * @param group    group
-     * @param listener listener
+     * @param configListener listener
      * @throws NacosException NacosException
      */
-    void addListener(String dataId, String group, Listener listener) throws NacosException;
+    void addListener(String dataId, String group, ConfigListener configListener) throws NacosException;
 
     /**
      * Publish config.
@@ -93,9 +93,9 @@ public interface ConfigService {
      *
      * @param dataId   dataId
      * @param group    group
-     * @param listener listener
+     * @param configListener listener
      */
-    void removeListener(String dataId, String group, Listener listener);
+    void removeListener(String dataId, String group, ConfigListener configListener);
 
     /**
      * Get server status

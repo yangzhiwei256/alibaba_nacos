@@ -36,14 +36,14 @@ public class GroupKey {
         return doGetKey(dataId, group, datumStr);
     }
 
-    private static String doGetKey(String dataId, String group, String datumStr) {
+    private static String doGetKey(String dataId, String group, String tenant) {
         StringBuilder sb = new StringBuilder();
         urlEncode(dataId, sb);
         sb.append('+');
         urlEncode(group, sb);
-        if (StringUtils.isNotEmpty(datumStr)) {
+        if (StringUtils.isNotEmpty(tenant)) {
             sb.append('+');
-            urlEncode(datumStr, sb);
+            urlEncode(tenant, sb);
         }
 
         return sb.toString();

@@ -19,7 +19,7 @@ package com.alibaba.cloud.nacos.refresh;
 import com.alibaba.cloud.nacos.NacosPropertySourceRepository;
 import com.alibaba.cloud.nacos.client.NacosPropertySource;
 import com.alibaba.nacos.api.config.ConfigService;
-import com.alibaba.nacos.api.config.listener.Listener;
+import com.alibaba.nacos.api.config.listener.ConfigListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -48,8 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author pbting
  */
 @Slf4j
-public class NacosContextRefresher
-		implements ApplicationListener<ApplicationReadyEvent>, ApplicationContextAware {
+public class NacosContextRefresher implements ApplicationListener<ApplicationReadyEvent>, ApplicationContextAware {
 
 	private static final AtomicLong REFRESH_COUNT = new AtomicLong(0);
 
@@ -63,10 +62,10 @@ public class NacosContextRefresher
 
 	private final AtomicBoolean ready = new AtomicBoolean(false);
 
-	private final Map<String, Listener> listenerMap = new ConcurrentHashMap<>(16);
+	/** nacos配置监听器缓存 **/
+	private final Map<String, ConfigListener> listenerMap = new ConcurrentHashMap<>(16);
 
-	public NacosContextRefresher(NacosRefreshProperties refreshProperties,
-			NacosRefreshHistory refreshHistory, ConfigService configService) {
+	public NacosContextRefresher(NacosRefreshProperties refreshProperties, NacosRefreshHistory refreshHistory, ConfigService configService) {
 		this.refreshProperties = refreshProperties;
 		this.refreshHistory = refreshHistory;
 		this.configService = configService;
@@ -85,24 +84,31 @@ public class NacosContextRefresher
 		this.applicationContext = applicationContext;
 	}
 
+    /**
+     * nacos 注册配置监听器
+     */
 	private void registerNacosListenersForApplications() {
-		if (refreshProperties.isEnabled()) {
-			for (NacosPropertySource nacosPropertySource : NacosPropertySourceRepository
-					.getAll()) {
 
+	    //默认开启自动加载机制
+		if (refreshProperties.isEnabled()) {
+			for (NacosPropertySource nacosPropertySource : NacosPropertySourceRepository.getAll()) {
 				if (!nacosPropertySource.isRefreshable()) {
 					continue;
 				}
-
 				String dataId = nacosPropertySource.getDataId();
 				registerNacosListener(nacosPropertySource.getGroup(), dataId);
 			}
 		}
 	}
 
+    /**
+     * 注册nacos配置监听器
+     * @param group 组名
+     * @param dataId 数据ID
+     */
 	private void registerNacosListener(final String group, final String dataId) {
 
-		Listener listener = listenerMap.computeIfAbsent(dataId, i -> new Listener() {
+		ConfigListener configListener = listenerMap.computeIfAbsent(dataId, i -> new ConfigListener() {
 			@Override
 			public void receiveConfigInfo(String configInfo) {
 				refreshCountIncrement();
@@ -110,16 +116,16 @@ public class NacosContextRefresher
 				if (!StringUtils.isEmpty(configInfo)) {
 					try {
 						MessageDigest md = MessageDigest.getInstance("MD5");
-						md5 = new BigInteger(1, md.digest(configInfo.getBytes(StandardCharsets.UTF_8)))
-								.toString(16);
+						md5 = new BigInteger(1, md.digest(configInfo.getBytes(StandardCharsets.UTF_8))).toString(16);
 					}
 					catch (NoSuchAlgorithmException e) {
 						log.warn("[Nacos] unable to get md5 for dataId: " + dataId, e);
 					}
 				}
 				refreshHistory.add(dataId, md5);
-				applicationContext.publishEvent(
-						new RefreshEvent(this, null, "Refresh Nacos config"));
+
+				//发布配置刷新事件
+				applicationContext.publishEvent(new RefreshEvent(this, null, "Refresh Nacos config"));
 				if (log.isDebugEnabled()) {
 					log.debug("Refresh Nacos config group " + group + ",dataId" + dataId);
 				}
@@ -132,7 +138,7 @@ public class NacosContextRefresher
 		});
 
 		try {
-			configService.addListener(dataId, group, listener);
+			configService.addListener(dataId, group, configListener);
 		}
 		catch (NacosException e) {
 			e.printStackTrace();

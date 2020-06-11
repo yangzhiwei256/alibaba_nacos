@@ -169,7 +169,7 @@ public class NacosConfigProperties {
 	/**
 	 * refreshable dataids , multiple separated by commas .
 	 */
-	private String refreshableDataids;
+	private String refreshableDataIds;
 
 	/**
 	 * a set of extended configurations .
@@ -338,12 +338,12 @@ public class NacosConfigProperties {
 		this.sharedDataIds = sharedDataIds;
 	}
 
-	public String getRefreshableDataids() {
-		return refreshableDataids;
+	public String getRefreshableDataIds() {
+		return refreshableDataIds;
 	}
 
-	public void setRefreshableDataids(String refreshableDataids) {
-		this.refreshableDataids = refreshableDataids;
+	public void setRefreshableDataIds(String refreshableDataIds) {
+		this.refreshableDataIds = refreshableDataIds;
 	}
 
 	public List<Config> getExtConfig() {
@@ -417,7 +417,7 @@ public class NacosConfigProperties {
 				+ ", secretKey='" + secretKey + '\'' + ", contextPath='" + contextPath
 				+ '\'' + ", clusterName='" + clusterName + '\'' + ", name='" + name + '\''
 				+ ", sharedDataids='" + sharedDataIds + '\'' + ", refreshableDataids='"
-				+ refreshableDataids + '\'' + ", extConfig=" + extConfig + '}';
+				+ refreshableDataIds + '\'' + ", extConfig=" + extConfig + '}';
 	}
 
 	public static class Config {

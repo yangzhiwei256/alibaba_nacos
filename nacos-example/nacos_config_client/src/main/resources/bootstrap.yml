@@ -10,11 +10,14 @@ spring:
     nacos:
       config:
         server-addr: localhost:8848
-        namespace: dev # 命名空间，默认public,注意必须是命名空间ID
+        namespace: ${spring.profiles.active} # 命名空间，默认public,注意必须是命名空间ID
         group: ${spring.application.name}
         prefix: ${spring.application.name} # 文件前缀
         file-extension: properties # 文件后缀
         username: nacos
         password: nacos
+        ## 注意： 共享dataID 组名必须为 DEFAULT_GROUP
+        sharedDataIds: shared.properties
+        refreshableDataIds: shared.properties
         extConfig:
           - { dataId: common.properties, group: common, refresh: true }

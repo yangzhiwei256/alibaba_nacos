@@ -79,7 +79,7 @@ public class NacosPropertySourceLocator implements PropertySourceLocator {
 
 		CompositePropertySource composite = new CompositePropertySource(NACOS_PROPERTY_SOURCE_NAME);
 
-		//NAOCOS配置加载顺序：共享配置 --> 扩展配置 --> 自身配置
+		//NAOCOS配置加载顺序：共享配置 --> 扩展配置 --> 自身配置（后面优先级高）
 		loadSharedConfiguration(composite);
 		loadExtConfiguration(composite);
 		loadApplicationConfiguration(composite, dataIdPrefix, nacosConfigProperties, env);
@@ -92,7 +92,7 @@ public class NacosPropertySourceLocator implements PropertySourceLocator {
      */
 	private void loadSharedConfiguration(CompositePropertySource compositePropertySource) {
 		String sharedDataIds = nacosConfigProperties.getSharedDataIds();
-		String refreshDataIds = nacosConfigProperties.getRefreshableDataids();
+		String refreshDataIds = nacosConfigProperties.getRefreshableDataIds();
 
 		if (sharedDataIds == null || sharedDataIds.trim().length() == 0) {
 			return;
@@ -109,7 +109,7 @@ public class NacosPropertySourceLocator implements PropertySourceLocator {
 	}
 
     /**
-     * 加载NACOS共享配置
+     * 加载NACOS扩展配置
      * @param compositePropertySource
      */
 	private void loadExtConfiguration(CompositePropertySource compositePropertySource) {
