@@ -28,26 +28,39 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Nacos 客户端自动配置
  * @author xiaojing
  */
 @Configuration
 @ConditionalOnNacosDiscoveryEnabled
-@AutoConfigureBefore({ SimpleDiscoveryClientAutoConfiguration.class,
-		CommonsClientAutoConfiguration.class })
+@AutoConfigureBefore({ SimpleDiscoveryClientAutoConfiguration.class, CommonsClientAutoConfiguration.class })
 public class NacosDiscoveryClientAutoConfiguration {
 
+    /**
+     * nacos 服务客户端配置
+     * @return
+     */
 	@Bean
 	@ConditionalOnMissingBean
 	public NacosDiscoveryProperties nacosProperties() {
 		return new NacosDiscoveryProperties();
 	}
 
+    /**
+     * nacos 客户端
+     * @param discoveryProperties
+     * @return
+     */
 	@Bean
-	public DiscoveryClient nacosDiscoveryClient(
-			NacosDiscoveryProperties discoveryProperties) {
+	public DiscoveryClient nacosDiscoveryClient(NacosDiscoveryProperties discoveryProperties) {
 		return new NacosDiscoveryClient(discoveryProperties);
 	}
 
+    /**
+     * nacos服务心跳检测监控
+     * @param nacosDiscoveryProperties
+     * @return
+     */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(value = "spring.cloud.nacos.discovery.watch.enabled", matchIfMissing = true)
