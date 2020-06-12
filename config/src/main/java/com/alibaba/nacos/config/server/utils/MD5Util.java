@@ -39,8 +39,14 @@ import static com.alibaba.nacos.config.server.constant.Constants.WORD_SEPARATOR;
 @SuppressWarnings("PMD.ClassNamingShouldBeCamelRule")
 public class MD5Util {
 
-    static public List<String> compareMd5(HttpServletRequest request,
-                                          HttpServletResponse response, Map<String, String> clientMd5Map) {
+    /**
+     * MD5比较，返回已经变更的缓存key(客户端与服务端MD5比较，不同则返回配置变更的Key)
+     * @param request
+     * @param response
+     * @param clientMd5Map
+     * @return
+     */
+    static public List<String> compareMd5(HttpServletRequest request, HttpServletResponse response, Map<String, String> clientMd5Map) {
         List<String> changedGroupKeys = new ArrayList<String>();
         String tag = request.getHeader("Vipserver-Tag");
         for (Map.Entry<String, String> entry : clientMd5Map.entrySet()) {
@@ -68,6 +74,12 @@ public class MD5Util {
         return sb.toString();
     }
 
+    /**
+     * 生成服务端响应配置数据
+     * @param changedGroupKeys
+     * @return
+     * @throws IOException
+     */
     static public String compareMd5ResultString(List<String> changedGroupKeys) throws IOException {
         if (null == changedGroupKeys) {
             return "";
@@ -96,14 +108,11 @@ public class MD5Util {
 
     /**
      * 解析传输协议 传输协议有两种格式(w为字段分隔符，l为每条数据分隔符)： 老报文：D w G w MD5 l 新报文：D w G w MD5 w T l
-     *
      * @param configKeysString 协议字符串
      * @return 协议报文
      */
     static public Map<String, String> getClientMd5Map(String configKeysString) {
-
-        Map<String, String> md5Map = new HashMap<String, String>(5);
-
+        Map<String, String> md5Map = new HashMap<>(5);
         if (null == configKeysString || "".equals(configKeysString)) {
             return md5Map;
         }
@@ -111,14 +120,14 @@ public class MD5Util {
         List<String> tmpList = new ArrayList<String>(3);
         for (int i = start; i < configKeysString.length(); i++) {
             char c = configKeysString.charAt(i);
-            if (c == WORD_SEPARATOR_CHAR) {
+            if (c == WORD_SEPARATOR_CHAR) { //行内分割
                 tmpList.add(configKeysString.substring(start, i));
                 start = i + 1;
                 if (tmpList.size() > 3) {
                     // 畸形报文。返回参数错误
                     throw new IllegalArgumentException("invalid protocol,too much key");
                 }
-            } else if (c == LINE_SEPARATOR_CHAR) {
+            } else if (c == LINE_SEPARATOR_CHAR) { //行间分割
                 String endValue = "";
                 if (start + 1 <= i) {
                     endValue = configKeysString.substring(start, i);

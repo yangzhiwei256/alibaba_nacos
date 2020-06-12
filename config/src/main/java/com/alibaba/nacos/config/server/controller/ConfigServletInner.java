@@ -64,10 +64,9 @@ public class ConfigServletInner {
     private static final int START_LONGPOLLING_VERSION_NUM = 204;
 
     /**
-     * 轮询接口
+     * 配置数据轮询接口
      */
-    public String doPollingConfig(HttpServletRequest request, HttpServletResponse response,
-                                  Map<String, String> clientMd5Map, int probeRequestSize)
+    public String doPollingConfig(HttpServletRequest request, HttpServletResponse response, Map<String, String> clientMd5Map, int probeRequestSize)
         throws IOException {
 
         // 长轮询

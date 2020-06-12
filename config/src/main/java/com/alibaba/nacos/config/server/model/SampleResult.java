@@ -25,20 +25,17 @@ import java.util.Map;
  */
 public class SampleResult implements Serializable {
 
-    /**
-     * 随机数
-     */
     private static final long serialVersionUID = 2587823382317389453L;
 
-    private Map<String, String> lisentersGroupkeyStatus;
+    private Map<String, String> listenersGroupkeyStatus;
 
-    public Map<String, String> getLisentersGroupkeyStatus() {
-        return lisentersGroupkeyStatus;
+    public Map<String, String> getListenersGroupkeyStatus() {
+        return listenersGroupkeyStatus;
     }
 
-    public void setLisentersGroupkeyStatus(
-        Map<String, String> lisentersGroupkeyStatus) {
-        this.lisentersGroupkeyStatus = lisentersGroupkeyStatus;
+    public void setListenersGroupKeyStatus(
+        Map<String, String> listenersGroupkeyStatus) {
+        this.listenersGroupkeyStatus = listenersGroupkeyStatus;
     }
 
 }

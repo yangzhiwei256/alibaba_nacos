@@ -40,6 +40,61 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Slf4j
 public class CacheData {
 
+    // ==================
+    private final String name;
+    private final ConfigFilterChainManager configFilterChainManager;
+    public final String dataId;
+    public final String group;
+    public final String tenant;
+    private final CopyOnWriteArrayList<ManagerListenerWrap> listeners;
+
+    private volatile String md5;
+    /**
+     * whether use local config
+     */
+    private volatile boolean isUseLocalConfig = false;
+    /**
+     * last modify time
+     */
+    private volatile long localConfigLastModified;
+    private volatile String content;
+    private int taskId;
+
+    /** 是否初始化 **/
+    private volatile boolean isInitializing = true;
+    private String type;
+
+    public CacheData(ConfigFilterChainManager configFilterChainManager, String name, String dataId, String group) {
+        if (null == dataId || null == group) {
+            throw new IllegalArgumentException("dataId=" + dataId + ", group=" + group);
+        }
+        this.name = name;
+        this.configFilterChainManager = configFilterChainManager;
+        this.dataId = dataId;
+        this.group = group;
+        this.tenant = TenantUtil.getUserTenantForAcm();
+        listeners = new CopyOnWriteArrayList<ManagerListenerWrap>();
+        this.isInitializing = true;
+        this.content = loadCacheContentFromDiskLocal(name, dataId, group, tenant);
+        this.md5 = getMd5String(content);
+    }
+
+    public CacheData(ConfigFilterChainManager configFilterChainManager, String name, String dataId, String group,
+                     String tenant) {
+        if (null == dataId || null == group) {
+            throw new IllegalArgumentException("dataId=" + dataId + ", group=" + group);
+        }
+        this.name = name;
+        this.configFilterChainManager = configFilterChainManager;
+        this.dataId = dataId;
+        this.group = group;
+        this.tenant = tenant;
+        listeners = new CopyOnWriteArrayList<ManagerListenerWrap>();
+        this.isInitializing = true;
+        this.content = loadCacheContentFromDiskLocal(name, dataId, group, tenant);
+        this.md5 = getMd5String(content);
+    }
+
     public boolean isInitializing() {
         return isInitializing;
     }
@@ -166,65 +221,77 @@ public class CacheData {
         return "CacheData [" + dataId + ", " + group + "]";
     }
 
-    void checkListenerMd5() {
-        for (ManagerListenerWrap wrap : listeners) {
-            if (!md5.equals(wrap.lastCallMd5)) {
-                safeNotifyListener(dataId, group, content, type, md5, wrap);
+    /**
+     * 比较缓存与缓存监听器md5值，不一致则通知监听器
+     */
+    public void checkListenerMd5() {
+        for (ManagerListenerWrap managerListenerWrap : listeners) {
+            if (!md5.equals(managerListenerWrap.lastCallMd5)) {
+                safeNotifyListener(dataId, group, content, type, md5, managerListenerWrap);
             }
         }
     }
 
+    /**
+     * 通知监听器更新配置，本质发送RefreshEvent事件通知Spring IOC刷新配置
+     * @param dataId 数据ID
+     * @param group 组名
+     * @param content 缓存配置内容
+     * @param type 类型
+     * @param md5 缓存MD5
+     * @param listenerWrap 监听器
+     */
     private void safeNotifyListener(final String dataId, final String group, final String content, final String type,
                                     final String md5, final ManagerListenerWrap listenerWrap) {
         final ConfigListener configListener = listenerWrap.configListener;
 
-        Runnable job = new Runnable() {
-            @Override
-            public void run() {
-                ClassLoader myClassLoader = Thread.currentThread().getContextClassLoader();
-                ClassLoader appClassLoader = configListener.getClass().getClassLoader();
-                try {
-                    if (configListener instanceof AbstractSharedConfigListener) {
-                        AbstractSharedConfigListener adapter = (AbstractSharedConfigListener) configListener;
-                        adapter.fillContext(dataId, group);
-                        log.info("[{}] [notify-context] dataId={}, group={}, md5={}", name, dataId, group, md5);
-                    }
-                    // 执行回调之前先将线程classloader设置为具体webapp的classloader，以免回调方法中调用spi接口是出现异常或错用（多应用部署才会有该问题）。
-                    Thread.currentThread().setContextClassLoader(appClassLoader);
-
-                    ConfigResponse cr = new ConfigResponse();
-                    cr.setDataId(dataId);
-                    cr.setGroup(group);
-                    cr.setContent(content);
-                    configFilterChainManager.doFilter(null, cr);
-                    String contentTmp = cr.getContent();
-                    configListener.receiveConfigInfo(contentTmp);
-
-                    // compare lastContent and content
-                    if (configListener instanceof AbstractConfigChangeConfigListener) {
-                        Map data = ConfigChangeHandler.getInstance().parseChangeData(listenerWrap.lastContent, content, type);
-                        ConfigChangeEvent event = new ConfigChangeEvent(data);
-                        ((AbstractConfigChangeConfigListener) configListener).receiveConfigChange(event);
-                        listenerWrap.lastContent = content;
-                    }
-
-                    listenerWrap.lastCallMd5 = md5;
-                    log.info("[{}] [notify-ok] dataId={}, group={}, md5={}, listener={} ", name, dataId, group, md5,
-                            configListener);
-                } catch (NacosException de) {
-                    log.error("[{}] [notify-error] dataId={}, group={}, md5={}, listener={} errCode={} errMsg={}", name,
-                        dataId, group, md5, configListener, de.getErrCode(), de.getErrMsg());
-                } catch (Throwable t) {
-                    log.error("[{}] [notify-error] dataId={}, group={}, md5={}, listener={} tx={}", name, dataId, group,
-                        md5, configListener, t.getCause());
-                } finally {
-                    Thread.currentThread().setContextClassLoader(myClassLoader);
+        Runnable job = () -> {
+            ClassLoader myClassLoader = Thread.currentThread().getContextClassLoader();
+            ClassLoader appClassLoader = configListener.getClass().getClassLoader();
+            try {
+                //共享配置监听器
+                if (configListener instanceof AbstractSharedConfigListener) {
+                    AbstractSharedConfigListener adapter = (AbstractSharedConfigListener) configListener;
+                    adapter.fillContext(dataId, group);
+                    log.info("[{}] [notify-context] dataId={}, group={}, md5={}", name, dataId, group, md5);
                 }
+                // 执行回调之前先将线程classloader设置为具体webapp的classloader，以免回调方法中调用spi接口是出现异常或错用（多应用部署才会有该问题）。
+                Thread.currentThread().setContextClassLoader(appClassLoader);
+
+                ConfigResponse configResponse = new ConfigResponse();
+                configResponse.setDataId(dataId);
+                configResponse.setGroup(group);
+                configResponse.setContent(content);
+                configFilterChainManager.doFilter(null, configResponse);
+                String tempContent = configResponse.getContent();
+
+                //回调监听器获取配置信息，发送RefreshEvent 通知Spring刷新配置，相当于重新加载配置
+                configListener.receiveConfigInfo(tempContent);
+
+                // compare lastContent and content
+                if (configListener instanceof AbstractConfigChangeConfigListener) {
+                    Map data = ConfigChangeHandler.getInstance().parseChangeData(listenerWrap.lastContent, content, type);
+                    ConfigChangeEvent event = new ConfigChangeEvent(data);
+                    ((AbstractConfigChangeConfigListener) configListener).receiveConfigChange(event);
+                    listenerWrap.lastContent = content;
+                }
+
+                // 更新配置监听器MD5值
+                listenerWrap.lastCallMd5 = md5;
+                log.info("[{}] [notify-ok] dataId={}, group={}, md5={}, listener={} ", name, dataId, group, md5, configListener);
+            } catch (NacosException nacosException) {
+                log.error("[{}] [notify-error] dataId={}, group={}, md5={}, listener={} errCode={} errMsg={}", name,
+                    dataId, group, md5, configListener, nacosException.getErrCode(), nacosException.getErrMsg());
+            } catch (Throwable t) {
+                log.error("[{}] [notify-error] dataId={}, group={}, md5={}, listener={} tx={}", name, dataId, group, md5, configListener, t.getCause());
+            } finally {
+                Thread.currentThread().setContextClassLoader(myClassLoader);
             }
         };
 
         final long startNotify = System.currentTimeMillis();
         try {
+            //若监听器维护线程池则交给线程池运行，否则同步运行
             if (null != configListener.getExecutor()) {
                 configListener.getExecutor().execute(job);
             } else {
@@ -243,103 +310,18 @@ public class CacheData {
         return (null == config) ? Constants.NULL : MD5.getInstance().getMD5String(config);
     }
 
+    /**
+     * 从本地磁盘加载缓存配置
+     * @param name
+     * @param dataId
+     * @param group
+     * @param tenant
+     * @return
+     */
     private String loadCacheContentFromDiskLocal(String name, String dataId, String group, String tenant) {
         String content = LocalConfigInfoProcessor.getFailover(name, dataId, group, tenant);
-        content = (null != content) ? content
-            : LocalConfigInfoProcessor.getSnapshot(name, dataId, group, tenant);
+        content = (null != content) ? content : LocalConfigInfoProcessor.getSnapshot(name, dataId, group, tenant);
         return content;
-    }
-
-    public CacheData(ConfigFilterChainManager configFilterChainManager, String name, String dataId, String group) {
-        if (null == dataId || null == group) {
-            throw new IllegalArgumentException("dataId=" + dataId + ", group=" + group);
-        }
-        this.name = name;
-        this.configFilterChainManager = configFilterChainManager;
-        this.dataId = dataId;
-        this.group = group;
-        this.tenant = TenantUtil.getUserTenantForAcm();
-        listeners = new CopyOnWriteArrayList<ManagerListenerWrap>();
-        this.isInitializing = true;
-        this.content = loadCacheContentFromDiskLocal(name, dataId, group, tenant);
-        this.md5 = getMd5String(content);
-    }
-
-    public CacheData(ConfigFilterChainManager configFilterChainManager, String name, String dataId, String group,
-                     String tenant) {
-        if (null == dataId || null == group) {
-            throw new IllegalArgumentException("dataId=" + dataId + ", group=" + group);
-        }
-        this.name = name;
-        this.configFilterChainManager = configFilterChainManager;
-        this.dataId = dataId;
-        this.group = group;
-        this.tenant = tenant;
-        listeners = new CopyOnWriteArrayList<ManagerListenerWrap>();
-        this.isInitializing = true;
-        this.content = loadCacheContentFromDiskLocal(name, dataId, group, tenant);
-        this.md5 = getMd5String(content);
-    }
-
-    // ==================
-
-    private final String name;
-    private final ConfigFilterChainManager configFilterChainManager;
-    public final String dataId;
-    public final String group;
-    public final String tenant;
-    private final CopyOnWriteArrayList<ManagerListenerWrap> listeners;
-
-    private volatile String md5;
-    /**
-     * whether use local config
-     */
-    private volatile boolean isUseLocalConfig = false;
-    /**
-     * last modify time
-     */
-    private volatile long localConfigLastModified;
-    private volatile String content;
-    private int taskId;
-    private volatile boolean isInitializing = true;
-    private String type;
-}
-
-class ManagerListenerWrap {
-    final ConfigListener configListener;
-    String lastCallMd5 = CacheData.getMd5String(null);
-    String lastContent = null;
-
-    ManagerListenerWrap(ConfigListener configListener) {
-        this.configListener = configListener;
-    }
-
-    ManagerListenerWrap(ConfigListener configListener, String md5) {
-        this.configListener = configListener;
-        this.lastCallMd5 = md5;
-    }
-
-    ManagerListenerWrap(ConfigListener configListener, String md5, String lastContent) {
-        this.configListener = configListener;
-        this.lastCallMd5 = md5;
-        this.lastContent = lastContent;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (null == obj || obj.getClass() != getClass()) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        ManagerListenerWrap other = (ManagerListenerWrap) obj;
-        return configListener.equals(other.configListener);
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
     }
 
 }

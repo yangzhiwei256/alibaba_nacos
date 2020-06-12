@@ -51,6 +51,30 @@ public class LongPollingService extends AbstractEventListener {
 
     private Map<String, Long> retainIps = new ConcurrentHashMap<String, Long>();
 
+    // =================
+
+    static public final String LONG_POLLING_HEADER = "Long-Pulling-Timeout";
+    static public final String LONG_POLLING_NO_HANG_UP_HEADER = "Long-Pulling-Timeout-No-Hangup";
+
+    final ScheduledExecutorService scheduledExecutorService;
+
+    /**
+     * 长轮询订阅关系
+     */
+    final Queue<ClientLongPolling> allSubs;
+
+    @SuppressWarnings("PMD.ThreadPoolCreationRule")
+    public LongPollingService() {
+        allSubs = new ConcurrentLinkedQueue<>();
+        scheduledExecutorService = Executors.newScheduledThreadPool(1, runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setDaemon(true);
+            thread.setName("com.alibaba.nacos.LongPolling");
+            return thread;
+        });
+        scheduledExecutorService.scheduleWithFixedDelay(new StatTask(), 0L, 10L, TimeUnit.SECONDS);
+    }
+
     private static boolean isFixedPolling() {
         return SwitchService.getSwitchBoolean(SwitchService.FIXED_POLLING, false);
     }
@@ -65,60 +89,68 @@ public class LongPollingService extends AbstractEventListener {
 
     public Map<String, String> getClientSubConfigInfo(String clientIp) {
         ClientLongPolling record = getClientPollingRecord(clientIp);
-
         if (record == null) {
             return Collections.emptyMap();
         }
-
         return record.clientMd5Map;
     }
 
+    /**
+     * 获取订阅信息
+     * @param dataId 数据ID
+     * @param group 组名
+     * @param tenant 命名空间
+     * @return
+     */
     public SampleResult getSubscribeInfo(String dataId, String group, String tenant) {
         String groupKey = GroupKey.getKeyTenant(dataId, group, tenant);
         SampleResult sampleResult = new SampleResult();
-        Map<String, String> lisentersGroupkeyStatus = new HashMap<String, String>(50);
-
+        Map<String, String> listenersGroupkeyStatus = new HashMap<>(50);
         for (ClientLongPolling clientLongPolling : allSubs) {
             if (clientLongPolling.clientMd5Map.containsKey(groupKey)) {
-                lisentersGroupkeyStatus.put(clientLongPolling.ip, clientLongPolling.clientMd5Map.get(groupKey));
+                listenersGroupkeyStatus.put(clientLongPolling.ip, clientLongPolling.clientMd5Map.get(groupKey));
             }
         }
-        sampleResult.setLisentersGroupkeyStatus(lisentersGroupkeyStatus);
+        sampleResult.setListenersGroupKeyStatus(listenersGroupkeyStatus);
         return sampleResult;
     }
 
-    public SampleResult getSubscribleInfoByIp(String clientIp) {
+    /**
+     * 获取客户端IP对应订阅信息
+     * @param clientIp nacos客户端ip
+     * @return
+     */
+    public SampleResult getSubscribeInfoByIp(String clientIp) {
         SampleResult sampleResult = new SampleResult();
-        Map<String, String> lisentersGroupkeyStatus = new HashMap<String, String>(50);
+        Map<String, String> lisentersGroupKeyStatus = new HashMap<>(50);
 
         for (ClientLongPolling clientLongPolling : allSubs) {
             if (clientLongPolling.ip.equals(clientIp)) {
                 // 一个ip可能有多个监听
-                if (!lisentersGroupkeyStatus.equals(clientLongPolling.clientMd5Map)) {
-                    lisentersGroupkeyStatus.putAll(clientLongPolling.clientMd5Map);
+                if (!lisentersGroupKeyStatus.equals(clientLongPolling.clientMd5Map)) {
+                    lisentersGroupKeyStatus.putAll(clientLongPolling.clientMd5Map);
                 }
             }
         }
-        sampleResult.setLisentersGroupkeyStatus(lisentersGroupkeyStatus);
+        sampleResult.setListenersGroupKeyStatus(lisentersGroupKeyStatus);
         return sampleResult;
     }
 
     /**
      * 聚合采样结果中的采样ip和监听配置的信息；合并策略用后面的覆盖前面的是没有问题的
-     *
      * @param sampleResults sample Results
      * @return Results
      */
     public SampleResult mergeSampleResult(List<SampleResult> sampleResults) {
         SampleResult mergeResult = new SampleResult();
-        Map<String, String> lisentersGroupkeyStatus = new HashMap<String, String>(50);
+        Map<String, String> lisentersGroupkeyStatus = new HashMap<>(50);
         for (SampleResult sampleResult : sampleResults) {
-            Map<String, String> lisentersGroupkeyStatusTmp = sampleResult.getLisentersGroupkeyStatus();
+            Map<String, String> lisentersGroupkeyStatusTmp = sampleResult.getListenersGroupkeyStatus();
             for (Map.Entry<String, String> entry : lisentersGroupkeyStatusTmp.entrySet()) {
                 lisentersGroupkeyStatus.put(entry.getKey(), entry.getValue());
             }
         }
-        mergeResult.setLisentersGroupkeyStatus(lisentersGroupkeyStatus);
+        mergeResult.setListenersGroupKeyStatus(lisentersGroupkeyStatus);
         return mergeResult;
     }
 
@@ -145,7 +177,7 @@ public class LongPollingService extends AbstractEventListener {
     }
 
     public SampleResult getCollectSubscribeInfo(String dataId, String group, String tenant) {
-        List<SampleResult> sampleResultLst = new ArrayList<SampleResult>(50);
+        List<SampleResult> sampleResultLst = new ArrayList<>(50);
         for (int i = 0; i < SAMPLE_TIMES; i++) {
             SampleResult sampleTmp = getSubscribeInfo(dataId, group, tenant);
             if (sampleTmp != null) {
@@ -159,20 +191,18 @@ public class LongPollingService extends AbstractEventListener {
                 }
             }
         }
-
-        SampleResult sampleResult = mergeSampleResult(sampleResultLst);
-        return sampleResult;
+        return mergeSampleResult(sampleResultLst);
     }
 
-    public SampleResult getCollectSubscribleInfoByIp(String ip) {
+    public SampleResult getCollectSubscribeInfoByIp(String ip) {
         SampleResult sampleResult = new SampleResult();
-        sampleResult.setLisentersGroupkeyStatus(new HashMap<String, String>(50));
+        sampleResult.setListenersGroupKeyStatus(new HashMap<>(50));
         for (int i = 0; i < SAMPLE_TIMES; i++) {
-            SampleResult sampleTmp = getSubscribleInfoByIp(ip);
+            SampleResult sampleTmp = getSubscribeInfoByIp(ip);
             if (sampleTmp != null) {
-                if (sampleTmp.getLisentersGroupkeyStatus() != null
-                    && !sampleResult.getLisentersGroupkeyStatus().equals(sampleTmp.getLisentersGroupkeyStatus())) {
-                    sampleResult.getLisentersGroupkeyStatus().putAll(sampleTmp.getLisentersGroupkeyStatus());
+                if (sampleTmp.getListenersGroupkeyStatus() != null
+                    && !sampleResult.getListenersGroupkeyStatus().equals(sampleTmp.getListenersGroupkeyStatus())) {
+                    sampleResult.getListenersGroupkeyStatus().putAll(sampleTmp.getListenersGroupkeyStatus());
                 }
             }
             if (i < SAMPLE_TIMES - 1) {
@@ -202,10 +232,17 @@ public class LongPollingService extends AbstractEventListener {
         return null;
     }
 
-    public void addLongPollingClient(HttpServletRequest req, HttpServletResponse rsp, Map<String, String> clientMd5Map,
-                                     int probeRequestSize) {
+    /**
+     * 田间长轮询客户端
+     * @param req
+     * @param rsp
+     * @param clientMd5Map 客户端MD5
+     * @param probeRequestSize 客户端请求配置数据
+     */
+    public void addLongPollingClient(HttpServletRequest req, HttpServletResponse rsp, Map<String, String> clientMd5Map, int probeRequestSize) {
 
-        String str = req.getHeader(LongPollingService.LONG_POLLING_HEADER);
+        //长轮询时长间隔
+        String longPollingTimeout = req.getHeader(LongPollingService.LONG_POLLING_HEADER);
         String noHangUpFlag = req.getHeader(LongPollingService.LONG_POLLING_NO_HANG_UP_HEADER);
         String appName = req.getHeader(RequestUtil.CLIENT_APPNAME_HEADER);
         String tag = req.getHeader("Vipserver-Tag");
@@ -213,15 +250,26 @@ public class LongPollingService extends AbstractEventListener {
         /**
          * 提前500ms返回响应，为避免客户端超时 @qiaoyi.dingqy 2013.10.22改动  add delay time for LoadBalance
          */
-        long timeout = Math.max(10000, Long.parseLong(str) - delayTime);
+        long timeout = Math.max(10000, Long.parseLong(longPollingTimeout) - delayTime);
         if (isFixedPolling()) {
             timeout = Math.max(10000, getFixedPollingInterval());
             // do nothing but set fix polling timeout
         } else {
             long start = System.currentTimeMillis();
             List<String> changedGroups = MD5Util.compareMd5(req, rsp, clientMd5Map);
-            if (changedGroups.size() > 0) {
-                generateResponse(req, rsp, changedGroups);
+            if (changedGroups.size() > 0) { //存在配置变更
+                //响应客户端变更配置数据
+                try {
+                    String respString = MD5Util.compareMd5ResultString(changedGroups);
+                    rsp.setHeader("Pragma", "no-cache");
+                    rsp.setDateHeader("Expires", 0);
+                    rsp.setHeader("Cache-Control", "no-cache,no-store");
+                    rsp.setStatus(HttpServletResponse.SC_OK);
+                    rsp.getWriter().println(respString);
+                } catch (Exception se) {
+                    log.error(se.toString(), se);
+                }
+
                 log.info("{}|{}|{}|{}|{}|{}|{}",
                     System.currentTimeMillis() - start, "instant", RequestUtil.getRemoteIp(req), "polling",
                     clientMd5Map.size(), probeRequestSize, changedGroups.size());
@@ -238,9 +286,7 @@ public class LongPollingService extends AbstractEventListener {
         final AsyncContext asyncContext = req.startAsync();
         // AsyncContext.setTimeout()的超时时间不准，所以只能自己控制
         asyncContext.setTimeout(0L);
-
-        scheduler.execute(
-            new ClientLongPolling(asyncContext, clientMd5Map, ip, probeRequestSize, timeout, appName, tag));
+        scheduledExecutorService.execute(new ClientLongPolling(asyncContext, clientMd5Map, ip, probeRequestSize, timeout, appName, tag));
     }
 
     @Override
@@ -257,7 +303,7 @@ public class LongPollingService extends AbstractEventListener {
         } else {
             if (event instanceof LocalDataChangeEvent) {
                 LocalDataChangeEvent evt = (LocalDataChangeEvent)event;
-                scheduler.execute(new DataChangeTask(evt.groupKey, evt.isBeta, evt.betaIps));
+                scheduledExecutorService.execute(new DataChangeTask(evt.groupKey, evt.isBeta, evt.betaIps));
             }
         }
     }
@@ -266,37 +312,18 @@ public class LongPollingService extends AbstractEventListener {
         return null != req.getHeader(LONG_POLLING_HEADER);
     }
 
-    @SuppressWarnings("PMD.ThreadPoolCreationRule")
-    public LongPollingService() {
-        allSubs = new ConcurrentLinkedQueue<ClientLongPolling>();
 
-        scheduler = Executors.newScheduledThreadPool(1, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setDaemon(true);
-                t.setName("com.alibaba.nacos.LongPolling");
-                return t;
-            }
-        });
-        scheduler.scheduleWithFixedDelay(new StatTask(), 0L, 10L, TimeUnit.SECONDS);
+    public Map<String, Long> getRetainIps() {
+        return retainIps;
+    }
+
+    public void setRetainIps(Map<String, Long> retainIps) {
+        this.retainIps = retainIps;
     }
 
     // =================
 
-    static public final String LONG_POLLING_HEADER = "Long-Pulling-Timeout";
-    static public final String LONG_POLLING_NO_HANG_UP_HEADER = "Long-Pulling-Timeout-No-Hangup";
-
-    final ScheduledExecutorService scheduler;
-
-    /**
-     * 长轮询订阅关系
-     */
-    final Queue<ClientLongPolling> allSubs;
-
-    // =================
-
-    class DataChangeTask implements Runnable {
+    private class DataChangeTask implements Runnable {
         @Override
         public void run() {
             try {
@@ -317,11 +344,11 @@ public class LongPollingService extends AbstractEventListener {
                         getRetainIps().put(clientSub.ip, System.currentTimeMillis());
                         iter.remove(); // 删除订阅关系
                         log.info("{}|{}|{}|{}|{}|{}|{}",
-                            (System.currentTimeMillis() - changeTime),
-                            "in-advance",
-                            RequestUtil.getRemoteIp((HttpServletRequest)clientSub.asyncContext.getRequest()),
-                            "polling",
-                            clientSub.clientMd5Map.size(), clientSub.probeRequestSize, groupKey);
+                                (System.currentTimeMillis() - changeTime),
+                                "in-advance",
+                                RequestUtil.getRemoteIp((HttpServletRequest)clientSub.asyncContext.getRequest()),
+                                "polling",
+                                clientSub.clientMd5Map.size(), clientSub.probeRequestSize, groupKey);
                         clientSub.sendResponse(Arrays.asList(groupKey));
                     }
                 }
@@ -353,7 +380,6 @@ public class LongPollingService extends AbstractEventListener {
     }
 
     // =================
-
     class StatTask implements Runnable {
         @Override
         public void run() {
@@ -362,91 +388,20 @@ public class LongPollingService extends AbstractEventListener {
         }
     }
 
-    // =================
+    // ================= 客户端长轮询线程
+    private class ClientLongPolling implements Runnable {
 
-    class ClientLongPolling implements Runnable {
+        // =================
 
-        @Override
-        public void run() {
-            asyncTimeoutFuture = scheduler.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        getRetainIps().put(ClientLongPolling.this.ip, System.currentTimeMillis());
-                        /**
-                         * 删除订阅关系
-                         */
-                        allSubs.remove(ClientLongPolling.this);
-
-                        if (isFixedPolling()) {
-                            log.info("{}|{}|{}|{}|{}|{}",
-                                (System.currentTimeMillis() - createTime),
-                                "fix", RequestUtil.getRemoteIp((HttpServletRequest)asyncContext.getRequest()),
-                                "polling",
-                                clientMd5Map.size(), probeRequestSize);
-                            List<String> changedGroups = MD5Util.compareMd5(
-                                (HttpServletRequest)asyncContext.getRequest(),
-                                (HttpServletResponse)asyncContext.getResponse(), clientMd5Map);
-                            if (changedGroups.size() > 0) {
-                                sendResponse(changedGroups);
-                            } else {
-                                sendResponse(null);
-                            }
-                        } else {
-                            log.info("{}|{}|{}|{}|{}|{}",
-                                (System.currentTimeMillis() - createTime),
-                                "timeout", RequestUtil.getRemoteIp((HttpServletRequest)asyncContext.getRequest()),
-                                "polling",
-                                clientMd5Map.size(), probeRequestSize);
-                            sendResponse(null);
-                        }
-                    } catch (Throwable t) {
-                        log.error("long polling error:" + t.getMessage(), t.getCause());
-                    }
-
-                }
-
-            }, timeoutTime, TimeUnit.MILLISECONDS);
-
-            allSubs.add(this);
-        }
-
-        void sendResponse(List<String> changedGroups) {
-            /**
-             *  取消超时任务
-             */
-            if (null != asyncTimeoutFuture) {
-                asyncTimeoutFuture.cancel(false);
-            }
-            generateResponse(changedGroups);
-        }
-
-        void generateResponse(List<String> changedGroups) {
-            if (null == changedGroups) {
-                /**
-                 * 告诉容器发送HTTP响应
-                 */
-                asyncContext.complete();
-                return;
-            }
-
-            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
-
-            try {
-                String respString = MD5Util.compareMd5ResultString(changedGroups);
-
-                // 禁用缓存
-                response.setHeader("Pragma", "no-cache");
-                response.setDateHeader("Expires", 0);
-                response.setHeader("Cache-Control", "no-cache,no-store");
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().println(respString);
-                asyncContext.complete();
-            } catch (Exception se) {
-                log.error(se.toString(), se);
-                asyncContext.complete();
-            }
-        }
+        final AsyncContext asyncContext;
+        final Map<String, String> clientMd5Map;
+        final long createTime;
+        final String ip;
+        final String appName;
+        final String tag;
+        final int probeRequestSize;
+        final long timeoutTime;
+        Future<?> asyncTimeoutFuture;
 
         ClientLongPolling(AsyncContext ac, Map<String, String> clientMd5Map, String ip, int probeRequestSize,
                           long timeoutTime, String appName, String tag) {
@@ -460,44 +415,80 @@ public class LongPollingService extends AbstractEventListener {
             this.tag = tag;
         }
 
-        // =================
+        @Override
+        public void run() {
+            asyncTimeoutFuture = scheduledExecutorService.schedule(() -> {
+                try {
+                    getRetainIps().put(ClientLongPolling.this.ip, System.currentTimeMillis());
+                    /**
+                     * 删除订阅关系
+                     */
+                    allSubs.remove(ClientLongPolling.this);
 
-        final AsyncContext asyncContext;
-        final Map<String, String> clientMd5Map;
-        final long createTime;
-        final String ip;
-        final String appName;
-        final String tag;
-        final int probeRequestSize;
-        final long timeoutTime;
+                    if (isFixedPolling()) {
+                        log.info("{}|{}|{}|{}|{}|{}",
+                                (System.currentTimeMillis() - createTime),
+                                "fix", RequestUtil.getRemoteIp((HttpServletRequest)asyncContext.getRequest()),
+                                "polling",
+                                clientMd5Map.size(), probeRequestSize);
+                        List<String> changedGroups = MD5Util.compareMd5(
+                                (HttpServletRequest)asyncContext.getRequest(),
+                                (HttpServletResponse)asyncContext.getResponse(), clientMd5Map);
+                        if (changedGroups.size() > 0) {
+                            sendResponse(changedGroups);
+                        } else {
+                            sendResponse(null);
+                        }
+                    } else {
+                        log.info("{}|{}|{}|{}|{}|{}",
+                                (System.currentTimeMillis() - createTime),
+                                "timeout", RequestUtil.getRemoteIp((HttpServletRequest)asyncContext.getRequest()),
+                                "polling",
+                                clientMd5Map.size(), probeRequestSize);
+                        sendResponse(null);
+                    }
+                } catch (Throwable t) {
+                    log.error("long polling error:" + t.getMessage(), t.getCause());
+                }
 
-        Future<?> asyncTimeoutFuture;
-    }
-
-    void generateResponse(HttpServletRequest request, HttpServletResponse response, List<String> changedGroups) {
-        if (null == changedGroups) {
-            return;
+            }, timeoutTime, TimeUnit.MILLISECONDS);
+            allSubs.add(this);
         }
 
-        try {
-            String respString = MD5Util.compareMd5ResultString(changedGroups);
-            // 禁用缓存
-            response.setHeader("Pragma", "no-cache");
-            response.setDateHeader("Expires", 0);
-            response.setHeader("Cache-Control", "no-cache,no-store");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println(respString);
-        } catch (Exception se) {
-            log.error(se.toString(), se);
+        /**
+         * 客户端响应
+         * @param changedGroups 改变的缓存group
+         */
+        private void sendResponse(List<String> changedGroups) {
+            /**
+             *  取消超时任务
+             */
+            if (null != asyncTimeoutFuture) {
+                asyncTimeoutFuture.cancel(false);
+            }
+
+            /**
+             * 通知容器发送HTTP响应
+             */
+            if (null == changedGroups) {
+                asyncContext.complete();
+                return;
+            }
+
+            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
+            try {
+                String respString = MD5Util.compareMd5ResultString(changedGroups);
+                response.setHeader("Pragma", "no-cache");
+                response.setDateHeader("Expires", 0);
+                response.setHeader("Cache-Control", "no-cache,no-store");
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().println(respString);
+                asyncContext.complete();
+            } catch (Exception se) {
+                log.error(se.toString(), se);
+                asyncContext.complete();
+            }
         }
-    }
-
-    public Map<String, Long> getRetainIps() {
-        return retainIps;
-    }
-
-    public void setRetainIps(Map<String, Long> retainIps) {
-        this.retainIps = retainIps;
     }
 
 }

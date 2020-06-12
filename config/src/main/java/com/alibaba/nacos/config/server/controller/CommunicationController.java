@@ -95,6 +95,6 @@ public class CommunicationController {
     public SampleResult getSubClientConfigByIp(HttpServletRequest request,
                                                HttpServletResponse response, @RequestParam("ip") String ip,
                                                ModelMap modelMap) {
-        return longPollingService.getCollectSubscribleInfoByIp(ip);
+        return longPollingService.getCollectSubscribeInfoByIp(ip);
     }
 }

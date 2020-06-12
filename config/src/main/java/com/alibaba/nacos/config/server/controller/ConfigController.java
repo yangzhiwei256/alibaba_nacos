@@ -71,7 +71,7 @@ public class ConfigController {
 
     private static final String EXPORT_CONFIG_FILE_NAME_DATE_FORMAT = "yyyyMMddHHmmss";
 
-    private final ConfigServletInner inner;
+    private final ConfigServletInner configServletInner;
 
     private final PersistService persistService;
 
@@ -80,7 +80,7 @@ public class ConfigController {
     @Autowired
     public ConfigController(ConfigServletInner configServletInner, PersistService persistService,
                             ConfigSubService configSubService) {
-        this.inner = configServletInner;
+        this.configServletInner = configServletInner;
         this.persistService = persistService;
         this.configSubService = configSubService;
     }
@@ -178,7 +178,7 @@ public class ConfigController {
         ParamUtils.checkParam(dataId, group, "datumId", "content");
         ParamUtils.checkParam(tag);
         final String clientIp = RequestUtil.getRemoteIp(request);
-        inner.doGetConfig(request, response, dataId, group, tenant, tag, clientIp);
+        configServletInner.doGetConfig(request, response, dataId, group, tenant, tag, clientIp);
     }
 
     /**
@@ -270,16 +270,14 @@ public class ConfigController {
      */
     @PostMapping("/listener")
     @Secured(action = ActionTypes.READ, parser = ConfigResourceParser.class)
-    public void listener(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException {
+    public void listener(HttpServletRequest request, HttpServletResponse response) throws IOException {
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         String probeModify = request.getParameter("Listening-Configs");
         if (StringUtils.isBlank(probeModify)) {
             throw new IllegalArgumentException("invalid probeModify");
         }
 
-        log.info("listen config id:" + probeModify);
-
+        log.info("listen config id: {}", probeModify);
         probeModify = URLDecoder.decode(probeModify, Constants.ENCODE);
 
         Map<String, String> clientMd5Map;
@@ -289,10 +287,10 @@ public class ConfigController {
             throw new IllegalArgumentException("invalid probeModify");
         }
 
-        log.info("listen config id 2:" + probeModify);
+        log.info("listen config id 2: {}", probeModify);
 
         // do long-polling
-        inner.doPollingConfig(request, response, clientMd5Map, probeModify.length());
+        configServletInner.doPollingConfig(request, response, clientMd5Map, probeModify.length());
     }
 
     /**
@@ -309,8 +307,8 @@ public class ConfigController {
         SampleResult collectSampleResult = configSubService.getCollectSampleResult(dataId, group, tenant, sampleTime);
         GroupkeyListenserStatus gls = new GroupkeyListenserStatus();
         gls.setCollectStatus(200);
-        if (collectSampleResult.getLisentersGroupkeyStatus() != null) {
-            gls.setLisentersGroupkeyStatus(collectSampleResult.getLisentersGroupkeyStatus());
+        if (collectSampleResult.getListenersGroupkeyStatus() != null) {
+            gls.setLisentersGroupkeyStatus(collectSampleResult.getListenersGroupkeyStatus());
         }
         return gls;
     }

@@ -103,7 +103,7 @@ public class Constants {
     public static final int SO_TIMEOUT = 60000;
 
     /**
-     * millisecond
+     * millisecond： 配置长轮询超时 30s
      */
     public static final int CONFIG_LONG_POLL_TIMEOUT = 30000;
 
