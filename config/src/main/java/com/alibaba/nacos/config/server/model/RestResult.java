@@ -26,9 +26,6 @@ import java.io.Serializable;
 
 public class RestResult<T> implements Serializable {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 6095433538316185017L;
 
     private int code;

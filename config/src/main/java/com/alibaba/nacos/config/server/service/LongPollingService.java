@@ -196,7 +196,7 @@ public class LongPollingService extends AbstractEventListener {
 
     public SampleResult getCollectSubscribeInfoByIp(String ip) {
         SampleResult sampleResult = new SampleResult();
-        sampleResult.setListenersGroupKeyStatus(new HashMap<>(50));
+        sampleResult.setListenersGroupKeyStatus(new HashMap<String, String>(50));
         for (int i = 0; i < SAMPLE_TIMES; i++) {
             SampleResult sampleTmp = getSubscribeInfoByIp(ip);
             if (sampleTmp != null) {
@@ -321,9 +321,15 @@ public class LongPollingService extends AbstractEventListener {
         this.retainIps = retainIps;
     }
 
-    // =================
-
+    // ================= 配置数据变更任务
     private class DataChangeTask implements Runnable {
+
+        final String groupKey;
+        final long changeTime = System.currentTimeMillis();
+        final boolean isBeta;
+        final List<String> betaIps;
+        final String tag;
+
         @Override
         public void run() {
             try {
@@ -349,7 +355,7 @@ public class LongPollingService extends AbstractEventListener {
                                 RequestUtil.getRemoteIp((HttpServletRequest)clientSub.asyncContext.getRequest()),
                                 "polling",
                                 clientSub.clientMd5Map.size(), clientSub.probeRequestSize, groupKey);
-                        clientSub.sendResponse(Arrays.asList(groupKey));
+                        clientSub.sendResponse(Collections.singletonList(groupKey));
                     }
                 }
             } catch (Throwable t) {
@@ -372,11 +378,7 @@ public class LongPollingService extends AbstractEventListener {
             this.tag = tag;
         }
 
-        final String groupKey;
-        final long changeTime = System.currentTimeMillis();
-        final boolean isBeta;
-        final List<String> betaIps;
-        final String tag;
+
     }
 
     // =================
@@ -461,7 +463,7 @@ public class LongPollingService extends AbstractEventListener {
          */
         private void sendResponse(List<String> changedGroups) {
             /**
-             *  取消超时任务
+             *  取消超时任务: 立即响应长轮询请求，而不是交由定时任务定时调度
              */
             if (null != asyncTimeoutFuture) {
                 asyncTimeoutFuture.cancel(false);

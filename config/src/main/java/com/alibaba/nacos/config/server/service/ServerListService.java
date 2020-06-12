@@ -90,8 +90,7 @@ public class ServerListService implements ApplicationListener<WebServerInitializ
         } else {
             addressPort = envAddressPort;
         }
-        addressUrl = System.getProperty("address.server.url",
-            servletContext.getContextPath() + "/" + RunningConfigUtils.getClusterName());
+        addressUrl = System.getProperty("address.server.url",servletContext.getContextPath() + "/" + RunningConfigUtils.getClusterName());
         addressServerUrl = "http://" + domainName + ":" + addressPort + addressUrl;
         envIdUrl = "http://" + domainName + ":" + addressPort + "/env";
 
@@ -100,19 +99,21 @@ public class ServerListService implements ApplicationListener<WebServerInitializ
         isHealthCheck = PropertyUtil.isHealthCheck();
         maxFailCount = PropertyUtil.getMaxHealthCheckFailCount();
         log.warn("useAddressServer:{}", isUseAddressServer);
-        GetServerListTask task = new GetServerListTask();
-        task.run();
+        GetServerListTask getServerListTask = new GetServerListTask();
+        getServerListTask.run();
         if (CollectionUtils.isEmpty(serverList)) {
             log.error("########## cannot get serverlist, so exit.");
             throw new RuntimeException("cannot get serverlist, so exit.");
         } else {
-            TimerTaskService.scheduleWithFixedDelay(task, 0L, 5L, TimeUnit.SECONDS);
+            TimerTaskService.scheduleWithFixedDelay(getServerListTask, 0L, 5L, TimeUnit.SECONDS);
         }
 
     }
 
-
-
+    /**
+     * 获取nacos 集群服务器IP列表
+     * @return
+     */
     public List<String> getServerList() {
         return new ArrayList<String>(serverList);
     }
@@ -264,8 +265,6 @@ public class ServerListService implements ApplicationListener<WebServerInitializ
         }
     }
 
-
-
     class GetServerListTask implements Runnable {
         @Override
         public void run() {
@@ -396,11 +395,11 @@ public class ServerListService implements ApplicationListener<WebServerInitializ
     public void onApplicationEvent(WebServerInitializedEvent event) {
         if (port == 0) {
             port = event.getWebServer().getPort();
-            List<String> newList = new ArrayList<String>();
+            List<String> newList = new ArrayList<>();
             for (String serverAddrTmp : serverList) {
                 newList.add(getFormatServerAddr(serverAddrTmp));
             }
-            setServerList(new ArrayList<String>(newList));
+            setServerList(new ArrayList<>(newList));
         }
         httpclient.start();
         CheckServerHealthTask checkServerHealthTask = new CheckServerHealthTask();

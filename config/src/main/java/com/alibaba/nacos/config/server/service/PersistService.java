@@ -18,6 +18,8 @@ package com.alibaba.nacos.config.server.service;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.config.server.enums.FileTypeEnum;
 import com.alibaba.nacos.config.server.model.*;
+import com.alibaba.nacos.config.server.model.mapper.ConfigInfoBetaWrapper;
+import com.alibaba.nacos.config.server.model.mapper.ConfigInfoTagWrapper;
 import com.alibaba.nacos.config.server.utils.MD5;
 import com.alibaba.nacos.config.server.utils.PaginationHelper;
 import com.alibaba.nacos.config.server.utils.ParamUtils;
@@ -1840,87 +1842,6 @@ public class PersistService {
         }
     }
 
-    public static class ConfigInfoWrapper extends ConfigInfo {
-        private static final long serialVersionUID = 4511997359365712505L;
-
-        private long lastModified;
-
-        public ConfigInfoWrapper() {
-        }
-
-        public long getLastModified() {
-            return lastModified;
-        }
-
-        public void setLastModified(long lastModified) {
-            this.lastModified = lastModified;
-        }
-
-        @Override
-        public int hashCode() {
-            return super.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return super.equals(obj);
-        }
-    }
-
-    public static class ConfigInfoBetaWrapper extends ConfigInfo4Beta {
-        private static final long serialVersionUID = 4511997359365712505L;
-
-        private long lastModified;
-
-        public ConfigInfoBetaWrapper() {
-        }
-
-        public long getLastModified() {
-            return lastModified;
-        }
-
-        public void setLastModified(long lastModified) {
-            this.lastModified = lastModified;
-        }
-
-        @Override
-        public int hashCode() {
-            return super.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return super.equals(obj);
-        }
-    }
-
-    public static class ConfigInfoTagWrapper extends ConfigInfo4Tag {
-        private static final long serialVersionUID = 4511997359365712505L;
-
-        private long lastModified;
-
-        public ConfigInfoTagWrapper() {
-        }
-
-        public long getLastModified() {
-            return lastModified;
-        }
-
-        public void setLastModified(long lastModified) {
-            this.lastModified = lastModified;
-        }
-
-        @Override
-        public int hashCode() {
-            return super.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            return super.equals(obj);
-        }
-    }
-
     public Page<ConfigInfoWrapper> findAllConfigInfoForDumpAll(
         final int pageNo, final int pageSize) {
         String sqlCountRows = "select count(*) from config_info";
@@ -3345,35 +3266,33 @@ public class PersistService {
         int pageCount = (int) Math.ceil(rowCount * 1.0 / perPageSize);
         int actualRowCount = 0;
         for (int pageNo = 1; pageNo <= pageCount; pageNo++) {
-            Page<PersistService.ConfigInfoWrapper> page = findAllConfigInfoForDumpAll(
+            Page<ConfigInfoWrapper> page = findAllConfigInfoForDumpAll(
                 pageNo, perPageSize);
             if (page != null) {
-                for (PersistService.ConfigInfoWrapper cf : page.getPageItems()) {
-                    String md5InDb = cf.getMd5();
-                    final String content = cf.getContent();
-                    final String tenant = cf.getTenant();
-                    final String md5 = MD5.getInstance().getMD5String(
-                        content);
+                for (ConfigInfoWrapper configInfoWrapper : page.getPageItems()) {
+                    String md5InDb = configInfoWrapper.getMd5();
+                    final String content = configInfoWrapper.getContent();
+                    final String tenant = configInfoWrapper.getTenant();
+                    final String md5 = MD5.getInstance().getMD5String(content);
                     if (StringUtils.isBlank(md5InDb)) {
                         try {
-                            updateMd5(cf.getDataId(), cf.getGroup(), tenant, md5, new Timestamp(cf.getLastModified()));
+                            updateMd5(configInfoWrapper.getDataId(), configInfoWrapper.getGroup(), tenant, md5, new Timestamp(configInfoWrapper.getLastModified()));
                         } catch (Exception e) {
-                            log
-                                .error("[completeMd5-error] datId:{} group:{} lastModified:{}",
-                                        cf.getDataId(),
-                                        cf.getGroup(),
-                                        new Timestamp(cf
+                            log.error("[completeMd5-error] datId:{} group:{} lastModified:{}",
+                                        configInfoWrapper.getDataId(),
+                                        configInfoWrapper.getGroup(),
+                                        new Timestamp(configInfoWrapper
                                             .getLastModified()));
                         }
                     } else {
                         if (!md5InDb.equals(md5)) {
                             try {
-                                updateMd5(cf.getDataId(), cf.getGroup(), tenant, md5,
-                                    new Timestamp(cf.getLastModified()));
+                                updateMd5(configInfoWrapper.getDataId(), configInfoWrapper.getGroup(), tenant, md5,
+                                    new Timestamp(configInfoWrapper.getLastModified()));
                             } catch (Exception e) {
                                 log.error("[completeMd5-error] datId:{} group:{} lastModified:{}",
-                                        cf.getDataId(), cf.getGroup(),
-                                        new Timestamp(cf.getLastModified()));
+                                        configInfoWrapper.getDataId(), configInfoWrapper.getGroup(),
+                                        new Timestamp(configInfoWrapper.getLastModified()));
                             }
                         }
                     }

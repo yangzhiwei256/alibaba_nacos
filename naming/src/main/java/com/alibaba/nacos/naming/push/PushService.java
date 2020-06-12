@@ -630,7 +630,7 @@ public class PushService implements ApplicationContextAware, ApplicationListener
         }
     }
 
-    private static class Receiver implements Runnable {
+    public static class Receiver implements Runnable {
         @Override
         public void run() {
             while (true) {

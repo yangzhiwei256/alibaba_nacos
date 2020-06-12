@@ -37,38 +37,13 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public final class TaskManager implements TaskManagerMBean {
 
-    private final ConcurrentHashMap<String, AbstractTask> tasks = new ConcurrentHashMap<String, AbstractTask>();
-
-    private final ConcurrentHashMap<String, TaskProcessor> taskProcessors =
-        new ConcurrentHashMap<String, TaskProcessor>();
-
+    private final ConcurrentHashMap<String, AbstractTask> tasks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, TaskProcessor> taskProcessors = new ConcurrentHashMap<>();
     private TaskProcessor defaultTaskProcessor;
-
     Thread processingThread;
-
     private final AtomicBoolean closed = new AtomicBoolean(true);
-
     private final String name;
-
-
-    class ProcessRunnable implements Runnable {
-
-        @Override
-        public void run() {
-            while (!TaskManager.this.closed.get()) {
-                try {
-                    Thread.sleep(100);
-                    TaskManager.this.process();
-                } catch (Throwable e) {
-                }
-            }
-
-        }
-
-    }
-
     ReentrantLock lock = new ReentrantLock();
-
     Condition notEmpty = this.lock.newCondition();
 
     public TaskManager() {
@@ -271,5 +246,25 @@ public final class TaskManager implements TaskManagerMBean {
         } catch (Exception e) {
             log.error("registerMBean_fail", "注册mbean出错", e);
         }
+    }
+
+    public AtomicBoolean getClosed() {
+        return closed;
+    }
+
+    class ProcessRunnable implements Runnable {
+
+        @Override
+        public void run() {
+            while (!TaskManager.this.closed.get()) {
+                try {
+                    Thread.sleep(100);
+                    TaskManager.this.process();
+                } catch (Throwable e) {
+                }
+            }
+
+        }
+
     }
 }

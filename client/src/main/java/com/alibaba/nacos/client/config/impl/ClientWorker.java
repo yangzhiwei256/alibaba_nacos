@@ -359,7 +359,7 @@ public class ClientWorker {
     }
 
     /**
-     * 获取配置已变更的GroupKey
+     * 获取服务端已更新的Nacos配置坐标（dataId + group + namespace）
      */
     List<String> checkUpdateDataIds(List<CacheData> localCacheDatas, List<String> inInitializingCacheList) throws IOException {
         StringBuilder cacheDataStr = new StringBuilder();
@@ -409,7 +409,7 @@ public class ClientWorker {
             HttpResult result = httpAgent.httpPost(Constants.CONFIG_CONTROLLER_PATH + "/listener", headers, requestParams, httpAgent.getEncode(), readTimeoutMs);
             if (HttpURLConnection.HTTP_OK == result.code) {
                 setHealthServer(true);
-                String response = result.content;
+                String response = result.content; //获取nacos已更新的配置信息：dataId + group + namespace （格式）
 
                 if (StringUtils.isBlank(response)) {
                     return Collections.emptyList();
@@ -421,25 +421,25 @@ public class ClientWorker {
                     log.error("[" + httpAgent.getName() + "] [polling-resp] decode modifiedDataIdsString error", e);
                 }
 
-                List<String> updateList = new LinkedList<String>();
+                List<String> updateConfigList = new LinkedList<>();
                 for (String dataIdAndGroup : response.split(LINE_SEPARATOR)) {
                     if (!StringUtils.isBlank(dataIdAndGroup)) {
                         String[] keyArr = dataIdAndGroup.split(WORD_SEPARATOR);
                         String dataId = keyArr[0];
                         String group = keyArr[1];
                         if (keyArr.length == 2) {
-                            updateList.add(GroupKey.getKey(dataId, group));
+                            updateConfigList.add(GroupKey.getKey(dataId, group));
                             log.info("[{}] [polling-resp] config changed. dataId={}, group={}", httpAgent.getName(), dataId, group);
                         } else if (keyArr.length == 3) {
                             String tenant = keyArr[2];
-                            updateList.add(GroupKey.getKeyTenant(dataId, group, tenant));
+                            updateConfigList.add(GroupKey.getKeyTenant(dataId, group, tenant));
                             log.info("[{}] [polling-resp] config changed. dataId={}, group={}, tenant={}", httpAgent.getName(), dataId, group, tenant);
                         } else {
                             log.error("[{}] [polling-resp] invalid dataIdAndGroup error {}", httpAgent.getName(), dataIdAndGroup);
                         }
                     }
                 }
-                return updateList;
+                return updateConfigList;
             } else {
                 setHealthServer(false);
                 log.error("[{}] [check-update] get changed dataId error, code: {}", httpAgent.getName(), result.code);
@@ -452,6 +452,32 @@ public class ClientWorker {
         return Collections.emptyList();
     }
 
+    public boolean isHealthServer() {
+        return isHealthServer;
+    }
+
+    private void setHealthServer(boolean isHealthServer) {
+        this.isHealthServer = isHealthServer;
+    }
+
+    final ScheduledExecutorService executor;
+    final ScheduledExecutorService executorService;
+
+    /**
+     * groupKey -> cacheData
+     */
+    private final AtomicReference<Map<String, CacheData>> cacheMap = new AtomicReference<Map<String, CacheData>>(
+            new HashMap<>());
+
+    private final HttpAgent httpAgent;
+    private final ConfigFilterChainManager configFilterChainManager;
+    private boolean isHealthServer = true;
+    private final long timeout;
+
+    /** 当前长轮询任务数 **/
+    private double currentLongingTaskCount = 0;
+    private final int taskPenaltyTime;
+    private boolean enableRemoteSyncConfig = false;
 
     /**
      * 长轮询检查nacos配置数据
@@ -459,7 +485,6 @@ public class ClientWorker {
     private class LongPollingRunnable implements Runnable {
 
         private final int taskId;
-
         public LongPollingRunnable(int taskId) {
             this.taskId = taskId;
         }
@@ -487,9 +512,9 @@ public class ClientWorker {
                     }
                 }
 
-                // check server config： 比较本地缓存MD5与服务器缓存，再次确认已经变更的缓存坐标
+                // check server config： 比较本地缓存MD5与服务器缓存，再次确认已经变更的缓存坐标: shared.properties+DEFAULT_GROUP+dev
                 List<String> changedGroupKeys = checkUpdateDataIds(localCacheDataList, inInitializingCacheList);
-                log.info("get changedGroupKeys:" + changedGroupKeys);
+                log.info("get changedGroupKeys ===> {}", changedGroupKeys);
 
                 //从nacos服务器获取变更的配置信息
                 for (String groupKey : changedGroupKeys) {
@@ -510,19 +535,18 @@ public class ClientWorker {
                             localCacheData.setType(ct[1]);
                         }
                         log.info("[{}] [data-received] dataId={}, group={}, tenant={}, md5={}, content={}, type={}",
-                            httpAgent.getName(), dataId, group, tenant, localCacheData.getMd5(),
-                            ContentUtils.truncateContent(ct[0]), ct[1]);
+                                httpAgent.getName(), dataId, group, tenant, localCacheData.getMd5(),
+                                ContentUtils.truncateContent(ct[0]), ct[1]);
                     } catch (NacosException ioe) {
                         String message = String.format(
-                            "[%s] [get-update] get changed config exception. dataId=%s, group=%s, tenant=%s",
-                            httpAgent.getName(), dataId, group, tenant);
+                                "[%s] [get-update] get changed config exception. dataId=%s, group=%s, tenant=%s",
+                                httpAgent.getName(), dataId, group, tenant);
                         log.error(message, ioe);
                     }
                 }
                 for (CacheData cacheData : localCacheDataList) {
                     //未初始化，或已初始化但未使用本地文件缓存配置数据
-                    if (!cacheData.isInitializing() || inInitializingCacheList
-                        .contains(GroupKey.getKeyTenant(cacheData.dataId, cacheData.group, cacheData.tenant))) {
+                    if (!cacheData.isInitializing() || inInitializingCacheList.contains(GroupKey.getKeyTenant(cacheData.dataId, cacheData.group, cacheData.tenant))) {
                         cacheData.checkListenerMd5();
                         cacheData.setInitializing(false);
                     }
@@ -538,31 +562,4 @@ public class ClientWorker {
             }
         }
     }
-
-    public boolean isHealthServer() {
-        return isHealthServer;
-    }
-
-    private void setHealthServer(boolean isHealthServer) {
-        this.isHealthServer = isHealthServer;
-    }
-
-    final ScheduledExecutorService executor;
-    final ScheduledExecutorService executorService;
-
-    /**
-     * groupKey -> cacheData
-     */
-    private final AtomicReference<Map<String, CacheData>> cacheMap = new AtomicReference<Map<String, CacheData>>(
-        new HashMap<String, CacheData>());
-
-    private final HttpAgent httpAgent;
-    private final ConfigFilterChainManager configFilterChainManager;
-    private boolean isHealthServer = true;
-    private final long timeout;
-
-    /** 当前长轮询任务数 **/
-    private double currentLongingTaskCount = 0;
-    private final int taskPenaltyTime;
-    private boolean enableRemoteSyncConfig = false;
 }
