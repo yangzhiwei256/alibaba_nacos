@@ -18,9 +18,11 @@ package com.alibaba.cloud.nacos.refresh;
 
 import com.alibaba.cloud.nacos.NacosPropertySourceRepository;
 import com.alibaba.cloud.nacos.client.NacosPropertySource;
+import com.alibaba.nacos.api.config.ConfigChangeEvent;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.ConfigListener;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.client.config.listener.impl.AbstractConfigChangeConfigListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cloud.endpoint.event.RefreshEvent;
@@ -137,8 +139,16 @@ public class NacosContextRefresher implements ApplicationListener<ApplicationRea
 			}
 		});
 
+		AbstractConfigChangeConfigListener abstractConfigChangeConfigListener = new AbstractConfigChangeConfigListener() {
+            @Override
+            public void receiveConfigChange(ConfigChangeEvent event) {
+                applicationContext.publishEvent(event);
+            }
+        };
+
 		try {
 			configService.addListener(dataId, group, configListener);
+			configService.addListener(dataId, group, abstractConfigChangeConfigListener);
 		}
 		catch (NacosException e) {
 			e.printStackTrace();

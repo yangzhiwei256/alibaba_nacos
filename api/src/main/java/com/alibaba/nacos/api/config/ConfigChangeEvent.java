@@ -15,6 +15,8 @@
  */
 package com.alibaba.nacos.api.config;
 
+import org.springframework.context.ApplicationEvent;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -23,10 +25,12 @@ import java.util.Map;
  *
  * @author rushsky518
  */
-public class ConfigChangeEvent {
-    private Map<String, ConfigChangeItem> data;
+public class ConfigChangeEvent extends ApplicationEvent {
+
+    private final Map<String, ConfigChangeItem> data;
 
     public ConfigChangeEvent(Map<String, ConfigChangeItem> data) {
+        super(data);
         this.data = data;
     }
 

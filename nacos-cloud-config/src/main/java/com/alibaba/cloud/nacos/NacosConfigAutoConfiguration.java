@@ -19,7 +19,10 @@ package com.alibaba.cloud.nacos;
 import com.alibaba.cloud.nacos.refresh.NacosContextRefresher;
 import com.alibaba.cloud.nacos.refresh.NacosRefreshHistory;
 import com.alibaba.cloud.nacos.refresh.NacosRefreshProperties;
+import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.alibaba.nacos.client.config.listener.impl.NacosValueAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.BeanFactoryUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -44,21 +47,30 @@ public class NacosConfigAutoConfiguration {
 	}
 
 	@Bean
+    @ConditionalOnMissingBean
 	public NacosRefreshProperties nacosRefreshProperties() {
 		return new NacosRefreshProperties();
 	}
 
 	@Bean
+    @ConditionalOnMissingBean
 	public NacosRefreshHistory nacosRefreshHistory() {
 		return new NacosRefreshHistory();
 	}
 
 	@Bean
-	public NacosContextRefresher nacosContextRefresher(
-			NacosConfigProperties configProperties,
-			NacosRefreshProperties nacosRefreshProperties,
-			NacosRefreshHistory refreshHistory) {
-		return new NacosContextRefresher(nacosRefreshProperties, refreshHistory,
-				configProperties.configServiceInstance());
+	public NacosContextRefresher nacosContextRefresher(NacosConfigProperties configProperties,
+                                                       NacosRefreshProperties nacosRefreshProperties,NacosRefreshHistory refreshHistory) {
+		return new NacosContextRefresher(nacosRefreshProperties, refreshHistory, configProperties.configServiceInstance());
 	}
+
+    /**
+     * Nacos Value注解处理器
+     * @return
+     */
+	@Bean
+    @ConditionalOnMissingBean
+	public NacosValueAnnotationBeanPostProcessor nacosValueAnnotationBeanPostProcessor(){
+	    return new NacosValueAnnotationBeanPostProcessor(NacosValue.class);
+    }
 }

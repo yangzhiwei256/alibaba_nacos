@@ -1,7 +1,7 @@
 package com.alibaba.nacos;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
  * time: 2020/3/20-21:36
  */
 @RestController
-@RefreshScope
+
 public class NacosController {
+
+    @NacosValue(value = "${spring.application.name:nacosValue}", autoRefreshed = true)
+    private String nacosValue;
 
     @Autowired
     private Environment environment;
@@ -26,5 +29,14 @@ public class NacosController {
     @GetMapping("/env/{env}")
     public String getEnvironment(@PathVariable("env") String env){
         return environment.getProperty(env, String.class);
+    }
+
+    /**
+     * 获取nacos配置
+     * @return
+     */
+    @GetMapping("nacos")
+    public String nacos(){
+        return nacosValue;
     }
 }
