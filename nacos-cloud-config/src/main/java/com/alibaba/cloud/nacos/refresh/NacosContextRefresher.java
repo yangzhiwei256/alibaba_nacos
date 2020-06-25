@@ -126,7 +126,7 @@ public class NacosContextRefresher implements ApplicationListener<ApplicationRea
 				}
 				refreshHistory.add(dataId, md5);
 
-				//发布配置刷新事件
+				//发布刷新事件
 				applicationContext.publishEvent(new RefreshEvent(this, null, "Refresh Nacos config"));
 				if (log.isDebugEnabled()) {
 					log.debug("Refresh Nacos config group " + group + ",dataId" + dataId);

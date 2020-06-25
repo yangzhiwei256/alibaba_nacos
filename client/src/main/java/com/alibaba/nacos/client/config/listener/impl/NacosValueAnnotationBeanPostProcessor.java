@@ -123,7 +123,7 @@ public class NacosValueAnnotationBeanPostProcessor extends
 	}
 
 	@Override
-	public void onApplicationEvent(ConfigChangeEvent event) {
+	public void onApplicationEvent(ConfigChangeEvent configChangeEvent) {
 		// In to this event receiver, the environment has been updated the
 		// latest configuration information, pull directly from the environment
 		// fix issue #142
@@ -205,6 +205,7 @@ public class NacosValueAnnotationBeanPostProcessor extends
 				return;
 			}
 
+			// 只有开启自动刷新的属性才会被缓存，用于后续的热加载
 			if (annotation.autoRefreshed()) {
 				String placeholder = resolvePlaceholder(annotation.value());
 
