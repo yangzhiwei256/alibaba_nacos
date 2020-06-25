@@ -86,9 +86,9 @@ public class PaginationHelper<E> {
         if (STANDALONE_MODE && !PropertyUtil.isStandaloneUseMysql()) {
             selectSQL = sqlFetchRows + " OFFSET " + startRow + " ROWS FETCH NEXT " + pageSize + " ROWS ONLY";
         } else if (lastMaxId != null) {
-            selectSQL = sqlFetchRows + " and id > " + lastMaxId + " order by id asc" + " offset " + 0 + " limit " + pageSize;
+            selectSQL = sqlFetchRows + " and id > " + lastMaxId + " order by id asc" + " limit " + 0 + " , " + pageSize;
         } else {
-            selectSQL = sqlFetchRows + "  offset " + startRow + " limit " + pageSize;
+            selectSQL = sqlFetchRows + "  limit " + startRow + " , " + pageSize;
         }
 
         List<E> result = jt.query(selectSQL, args, rowMapper);

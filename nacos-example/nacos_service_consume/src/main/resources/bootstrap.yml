@@ -8,8 +8,9 @@ spring:
   cloud:
     nacos:
       discovery:
-        username: nacos
-        password: nacos
+        username: iot-app
+        password: iot-app
         server-addr: localhost:8848
         namespace: ${spring.profiles.active}
-        group: nacos-service-registry ## 服务订阅组
+        ## 服务订阅组
+        group: nacos-service-registry

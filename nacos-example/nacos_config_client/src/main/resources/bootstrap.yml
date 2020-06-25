@@ -14,8 +14,8 @@ spring:
         group: ${spring.application.name}
         prefix: ${spring.application.name} # 文件前缀
         file-extension: properties # 文件后缀
-        username: nacos
-        password: nacos
+        username: iot-app
+        password: iot-app
         ## 注意： 共享dataID 组名必须为 DEFAULT_GROUP
         sharedDataIds: shared.properties
         refreshableDataIds: shared.properties

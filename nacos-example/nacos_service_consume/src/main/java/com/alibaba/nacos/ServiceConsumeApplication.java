@@ -6,6 +6,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 /**
+ * nacos 服务消费
  * @author zhiwei_yang
  * @time 2020-3-23-16:34
  */

@@ -1867,7 +1867,7 @@ public class PersistService {
     public Page<ConfigInfoWrapper> findAllConfigInfoFragment(final long lastMaxId, final int pageSize) {
         String select
             = "SELECT id,data_id,group_id,tenant_id,app_name,content,md5,gmt_modified,type from config_info where id > ? "
-            + "order by id asc offset ? limit ?";
+            + "order by id asc limit ? , ?";
         PaginationHelper<ConfigInfoWrapper> helper = new PaginationHelper<>();
         try {
             return helper.fetchPageLimit(jdbcTemplate, select, new Object[]{lastMaxId, 0, pageSize}, 1, pageSize, CONFIG_INFO_WRAPPER_ROW_MAPPER);

@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RefreshScope
-public class SingleController {
+public class SimpleController {
 
     /**
      * 不支持自动更新，需 @RefreshScope 刷新
      */
-    @Value("${spring.application.name:singleValue}")
-    private String singleValue;
+    @Value("${spring.config.name:simpleValue}")
+    private String simpleValue;
 
     /**
      * 获取nacos配置
      * @return
      */
-    @GetMapping("single")
-    public String single(){
-        return singleValue;
+    @GetMapping("simple")
+    public String simple(){
+        return simpleValue;
     }
 }

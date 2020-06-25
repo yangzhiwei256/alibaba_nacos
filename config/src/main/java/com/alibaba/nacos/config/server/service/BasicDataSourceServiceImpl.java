@@ -54,7 +54,7 @@ import static com.alibaba.nacos.core.utils.SystemUtils.STANDALONE_MODE;
 @Slf4j
 public class BasicDataSourceServiceImpl implements DataSourceService {
 
-    private static final String DEFAULT_POSTGRESQL_DRIVER = "org.postgresql.Driver";
+    private static final String DEFAULT_MYSQL_DRIVER = "com.mysql.cj.jdbc.Driver";
     private static String JDBC_DRIVER_NAME;
 
     /**
@@ -90,11 +90,11 @@ public class BasicDataSourceServiceImpl implements DataSourceService {
 
     static {
         try {
-            Class.forName(DEFAULT_POSTGRESQL_DRIVER);
-            JDBC_DRIVER_NAME = DEFAULT_POSTGRESQL_DRIVER;
-            log.info("Use PostgreSQL as the driver");
+            Class.forName(DEFAULT_MYSQL_DRIVER);
+            JDBC_DRIVER_NAME = DEFAULT_MYSQL_DRIVER;
+            log.info("Use MYSQL as the driver");
         } catch (ClassNotFoundException e) {
-            log.error("POSTGRESQL数据库驱动【{}】不存在",DEFAULT_POSTGRESQL_DRIVER, e);
+            log.error("MYSQL 数据库驱动【{}】不存在", DEFAULT_MYSQL_DRIVER, e);
         }
     }
 

@@ -199,9 +199,9 @@
 
             <!-- JDBC libs -->
             <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>42.2.8</version>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>8.0.20</version>
             </dependency>
 
             <!-- Third-party libs -->

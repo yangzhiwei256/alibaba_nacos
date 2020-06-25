@@ -13,10 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
  * time: 2020/3/20-21:36
  */
 @RestController
-
 public class NacosController {
 
-    @NacosValue(value = "${spring.application.name:nacosValue}", autoRefreshed = true)
+    @NacosValue(value = "${spring.config.name:nacosValue}", autoRefreshed = true)
     private String nacosValue;
 
     @Autowired

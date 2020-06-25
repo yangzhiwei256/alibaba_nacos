@@ -8,8 +8,8 @@ spring:
   cloud:
     nacos:
       discovery: ## 注意服务注册名称不能使用下划线
-        username: nacos
-        password: nacos
+        username: iot-app
+        password: iot-app
         ## 是否是临时节点，默认临时节点，保证AP, 持久化节点基于raft保证cp
         ephemeral: true
         server-addr: localhost:8848

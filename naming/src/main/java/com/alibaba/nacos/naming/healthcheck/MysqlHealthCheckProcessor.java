@@ -20,10 +20,10 @@ import com.alibaba.nacos.naming.core.Cluster;
 import com.alibaba.nacos.naming.core.Instance;
 import com.alibaba.nacos.naming.misc.SwitchDomain;
 import com.alibaba.nacos.naming.monitor.MetricsMonitor;
+import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.postgresql.ds.PGConnectionPoolDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,9 +41,9 @@ import java.util.concurrent.*;
  */
 @Component
 @Slf4j
-public class PostgreSqlHealthCheckProcessor implements HealthCheckProcessor {
+public class MysqlHealthCheckProcessor implements HealthCheckProcessor {
 
-    public static final String TYPE = "POSTGRESQL";
+    public static final String TYPE = "MYSQL";
 
     @Autowired
     private HealthCheckCommon healthCheckCommon;
@@ -77,7 +77,7 @@ public class PostgreSqlHealthCheckProcessor implements HealthCheckProcessor {
         );
     }
 
-    public PostgreSqlHealthCheckProcessor() {
+    public MysqlHealthCheckProcessor() {
     }
 
     @Override
@@ -146,7 +146,7 @@ public class PostgreSqlHealthCheckProcessor implements HealthCheckProcessor {
                 AbstractHealthChecker.Mysql config = (AbstractHealthChecker.Mysql) cluster.getHealthChecker();
 
                 if (connection == null || connection.isClosed()) {
-                    PGConnectionPoolDataSource dataSource = new PGConnectionPoolDataSource();
+                    MysqlConnectionPoolDataSource dataSource = new MysqlConnectionPoolDataSource();
                     dataSource.setConnectTimeout(CONNECT_TIMEOUT_MS);
                     dataSource.setSocketTimeout(CONNECT_TIMEOUT_MS);
                     dataSource.setUser(config.getUser());
