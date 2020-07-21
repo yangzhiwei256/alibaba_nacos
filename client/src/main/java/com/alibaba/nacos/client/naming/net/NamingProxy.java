@@ -83,7 +83,7 @@ public class NamingProxy {
     private final int faultNodeCheckTimeoutMs = 300;
 
     /** 临时故障节点： 避免nacos节点出现故障，轮询到故障节点，通过定时任务检测恢复 **/
-    private final static Set<String> realTimeFaultNode = new CopyOnWriteArraySet<>();
+    private final Set<String> realTimeFaultNode = new CopyOnWriteArraySet<>();
 
     private Properties properties;
 
