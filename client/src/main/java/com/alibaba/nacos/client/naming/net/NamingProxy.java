@@ -502,7 +502,7 @@ public class NamingProxy {
                     //添加故障节点
                     realTimeFaultNode.add(server);
                 }
-                index = (index + 1) % servers.size();
+                index = (index + 1) % effectiveServerList.size();
             }
         }
 
