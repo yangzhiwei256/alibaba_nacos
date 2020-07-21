@@ -33,17 +33,13 @@ import com.alibaba.nacos.client.config.impl.SpasAdapter;
 import com.alibaba.nacos.client.monitor.MetricsMonitor;
 import com.alibaba.nacos.client.naming.beat.BeatInfo;
 import com.alibaba.nacos.client.naming.utils.CollectionUtils;
-import com.alibaba.nacos.client.naming.utils.NetUtils;
 import com.alibaba.nacos.client.naming.utils.SignUtil;
 import com.alibaba.nacos.client.naming.utils.UtilAndComs;
 import com.alibaba.nacos.client.security.SecurityProxy;
 import com.alibaba.nacos.client.utils.AppNameUtils;
 import com.alibaba.nacos.client.utils.TemplateUtils;
 import com.alibaba.nacos.common.constant.CommonConstants;
-import com.alibaba.nacos.common.utils.HttpMethod;
-import com.alibaba.nacos.common.utils.IoUtils;
-import com.alibaba.nacos.common.utils.UuidUtils;
-import com.alibaba.nacos.common.utils.VersionUtils;
+import com.alibaba.nacos.common.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -52,7 +48,7 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.util.*;
 import java.util.concurrent.*;
-
+import java.util.stream.Collectors;
 
 
 /**
@@ -83,6 +79,12 @@ public class NamingProxy {
 
     private final long securityInfoRefreshIntervalMills = TimeUnit.SECONDS.toMillis(5);
 
+    /** 故障节点端口检测最长耗时  **/
+    private final int faultNodeCheckTimeoutMs = 300;
+
+    /** 临时故障节点： 避免nacos节点出现故障，轮询到故障节点，通过定时任务检测恢复 **/
+    private final Set<String> realTimeFaultNode = new CopyOnWriteArraySet<>();
+
     private Properties properties;
 
     public NamingProxy(String namespaceId, String endpoint, String serverList, Properties properties) {
@@ -107,7 +109,7 @@ public class NamingProxy {
      */
     private void initRefreshTask() {
 
-        ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(2, new ThreadFactory() {
+        ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(3, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
@@ -129,6 +131,16 @@ public class NamingProxy {
             @Override
             public void run() {
                 securityProxy.login(getServerList());
+            }
+        }, 0, securityInfoRefreshIntervalMills, TimeUnit.MILLISECONDS);
+
+
+        executorService.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                //剔除故障节点
+                realTimeFaultNode.removeIf(faultHost -> NetUtils.isPortUseful(faultHost.split(":")[0],
+                        Integer.parseInt(faultHost.split(":")[1]), faultNodeCheckTimeoutMs));
             }
         }, 0, securityInfoRefreshIntervalMills, TimeUnit.MILLISECONDS);
 
@@ -470,9 +482,13 @@ public class NamingProxy {
         NacosException exception = new NacosException();
         if (!CollectionUtils.isEmpty(servers)) {
             Random random = new Random(System.currentTimeMillis());
-            int index = random.nextInt(servers.size());
-            for (int i = 0; i < servers.size(); i++) {
-                String server = servers.get(index);
+
+            //过滤故障节点，只轮询有效节点
+            List<String> effectiveServerList = servers.stream().filter(node -> !realTimeFaultNode.contains(node)).collect(Collectors.toList());
+
+            int index = random.nextInt(effectiveServerList.size());
+            for (int i = 0; i < effectiveServerList.size(); i++) {
+                String server = effectiveServerList.get(index);
                 try {
                     return callServer(api, params, body, server, method);
                 } catch (NacosException e) {
@@ -480,6 +496,8 @@ public class NamingProxy {
                     if (log.isDebugEnabled()) {
                         log.debug("request {} failed.", server, e);
                     }
+                    //添加故障节点
+                    realTimeFaultNode.add(server);
                 }
                 index = (index + 1) % servers.size();
             }

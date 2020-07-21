@@ -25,6 +25,10 @@
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
 
+    <properties>
+        <version.commons-net>3.6</version.commons-net>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -42,6 +46,11 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-service-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>${version.commons-net}</version>
         </dependency>
     </dependencies>
 
